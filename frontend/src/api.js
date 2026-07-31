@@ -1,0 +1,72 @@
+import axios from 'axios';
+
+const API = axios.create({
+  baseURL: 'http://localhost:8000/api',
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Add auth token to requests
+API.interceptors.request.use(config => {
+  const token = localStorage.getItem('ts_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle 401 errors
+API.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('ts_token');
+      localStorage.removeItem('ts_user');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const login = async (username, password) => {
+  const { data } = await API.post('/auth/login', { username, password });
+  localStorage.setItem('ts_token', data.access_token);
+  localStorage.setItem('ts_user', JSON.stringify(data.user));
+  return data;
+};
+
+export const logout = () => {
+  localStorage.removeItem('ts_token');
+  localStorage.removeItem('ts_user');
+  window.location.reload();
+};
+
+export const getDashboard = () => API.get('/dashboard').then(r => r.data);
+export const getCustomers = (search) => API.get(`/customers${search ? `?search=${search}` : ''}`).then(r => r.data);
+export const createCustomer = (data) => API.post('/customers', data).then(r => r.data);
+export const getCustomer = (id) => API.get(`/customers/${id}`).then(r => r.data);
+
+export const getInquiries = (params) => API.get('/inquiries', { params }).then(r => r.data);
+export const createInquiry = (data) => API.post('/inquiries', data).then(r => r.data);
+export const updateInquiry = (id, data) => API.put(`/inquiries/${id}`, data).then(r => r.data);
+export const deleteInquiry = (id) => API.delete(`/inquiries/${id}`).then(r => r.data);
+
+export const getQuotations = () => API.get('/quotations').then(r => r.data);
+export const createQuotation = (data) => API.post('/quotations', data).then(r => r.data);
+export const sendQuotation = (id) => API.put(`/quotations/${id}/send`).then(r => r.data);
+
+export const getBookings = () => API.get('/bookings').then(r => r.data);
+export const createBooking = (data) => API.post('/bookings', data).then(r => r.data);
+export const updateBookingStatus = (id, status) => API.put(`/bookings/${id}/status?status=${status}`).then(r => r.data);
+
+export const getPayments = (bookingId) => API.get(`/payments${bookingId ? `?booking_id=${bookingId}` : ''}`).then(r => r.data);
+export const createPayment = (data) => API.post('/payments', data).then(r => r.data);
+
+export const getStaff = () => API.get('/staff').then(r => r.data);
+export const getEditingProjects = () => API.get('/editing-projects').then(r => r.data);
+export const createEditingProject = (data) => API.post('/editing-projects', data).then(r => r.data);
+export const updateEditingStatus = (id, status) => API.put(`/editing-projects/${id}/status?status=${status}`).then(r => r.data);
+
+export const getUsers = () => API.get('/users').then(r => r.data);
+export const getActivity = () => API.get('/activity').then(r => r.data);
+
+export default API;
