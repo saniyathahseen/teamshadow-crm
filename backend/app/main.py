@@ -14,6 +14,7 @@ from app.routes.booking_routes import router as booking_router
 from app.routes.payment_routes import router as payment_router
 from app.routes.staff_routes import router as staff_router
 from app.routes.editing_routes import router as editing_router
+from app.routes.extra_routes import router as extra_router
 
 app = FastAPI(
     title="Team Shadow Weddings CRM",
@@ -40,6 +41,7 @@ app.include_router(booking_router)
 app.include_router(payment_router)
 app.include_router(staff_router)
 app.include_router(editing_router)
+app.include_router(extra_router)
 
 
 @app.on_event("startup")
