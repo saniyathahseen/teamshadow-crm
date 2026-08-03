@@ -84,3 +84,32 @@ def get_customer(customer_id: int, user: User = Depends(get_current_user), db: S
                        "status": q.status, "created_at": q.created_at.isoformat() if q.created_at else None}
                        for q in customer.quotations]
     }
+
+
+@router.put("/{customer_id}")
+def update_customer(customer_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    for key, value in data.items():
+        if hasattr(customer, key) and value is not None:
+            if key == "wedding_date" and value:
+                value = datetime.strptime(value, "%Y-%m-%d").date()
+            setattr(customer, key, value)
+    customer.updated_at = datetime.utcnow()
+    db.commit()
+    log = ActivityLog(user_id=user.id, action="updated", entity_type="customer", entity_id=customer.id,
+                     description=f"Updated customer: {customer.name}")
+    db.add(log)
+    db.commit()
+    return {"message": "Customer updated successfully"}
+
+
+@router.delete("/{customer_id}")
+def delete_customer(customer_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    db.delete(customer)
+    db.commit()
+    return {"message": "Customer deleted successfully"}

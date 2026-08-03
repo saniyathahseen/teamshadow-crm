@@ -37,6 +37,28 @@ def list_staff(user: User = Depends(get_current_user), db: Session = Depends(get
     ]
 
 
+@router.put("/{staff_id}")
+def update_staff(staff_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    for key, value in data.items():
+        if hasattr(staff, key) and value is not None:
+            setattr(staff, key, value)
+    db.commit()
+    return {"message": "Staff updated successfully"}
+
+
+@router.delete("/{staff_id}")
+def delete_staff(staff_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    db.delete(staff)
+    db.commit()
+    return {"message": "Staff deleted successfully"}
+
+
 @router.post("")
 def create_staff(data: StaffCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     staff = Staff(

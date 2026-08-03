@@ -59,6 +59,28 @@ def create_editing_project(data: EditingProjectCreate, user: User = Depends(get_
     return {"id": project.id, "message": "Editing project created successfully"}
 
 
+@router.put("/{project_id}")
+def update_editing_project(project_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = db.query(EditingProject).filter(EditingProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    for key, value in data.items():
+        if hasattr(project, key) and value is not None:
+            setattr(project, key, value)
+    db.commit()
+    return {"message": "Editing project updated successfully"}
+
+
+@router.delete("/{project_id}")
+def delete_editing_project(project_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = db.query(EditingProject).filter(EditingProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db.delete(project)
+    db.commit()
+    return {"message": "Editing project deleted successfully"}
+
+
 @router.put("/{project_id}/status")
 def update_editing_status(project_id: int, status: str = Query(...),
                           user: User = Depends(get_current_user), db: Session = Depends(get_db)):

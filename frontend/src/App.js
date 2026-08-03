@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense } from './api';
+import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject } from './api';
 import './App.css';
 
 // ============================================
@@ -263,6 +263,23 @@ function Inquiries({ onToast }) {
     } catch (e) { onToast(e.response?.data?.detail || 'Error creating inquiry', 'error'); }
   };
 
+  const handleEdit = (inq) => {
+    setForm({
+      customer_id: inq.customer?.id || '', source: inq.source, event_type: inq.event_type || '',
+      budget_estimate: inq.budget_estimate || '', notes: inq.notes || '', name: '', phone: ''
+    });
+    setShowForm(true);
+  };
+
+  const handleUpdateStatus = async (id) => {
+    const statuses = ['new', 'contacted', 'qualified', 'quotation_sent', 'follow_up', 'negotiation', 'booked', 'lost'];
+    const status = window.prompt(`Update status to:\n${statuses.join(', ')}`);
+    if (status && statuses.includes(status)) {
+      try { await updateInquiry(id, { status }); onToast(`Status updated to ${status}`, 'success'); loadData(); }
+      catch (e) { onToast('Error updating status', 'error'); }
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this inquiry?')) return;
     try { await deleteInquiry(id); onToast('Inquiry deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); }
@@ -353,6 +370,8 @@ function Inquiries({ onToast }) {
                 <td>{i.budget_estimate ? `₹${i.budget_estimate.toLocaleString()}` : '-'}</td>
                 <td><span className={`status status-${i.status}`}>{i.status.replace('_', ' ')}</span></td>
                 <td>
+                  <button className="action-btn edit" onClick={() => handleEdit(i)} title="Edit"><i className="fas fa-edit"></i></button>
+                  <button className="action-btn edit" onClick={() => handleUpdateStatus(i.id)} title="Update Status"><i className="fas fa-tag"></i></button>
                   <button className="action-btn delete" onClick={() => handleDelete(i.id)} title="Delete"><i className="fas fa-trash"></i></button>
                 </td>
               </tr>
@@ -372,6 +391,7 @@ function Customers({ onToast }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', wedding_date: '', bride_name: '', groom_name: '', venue: '', notes: '' });
   const [detail, setDetail] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -382,12 +402,33 @@ function Customers({ onToast }) {
   const handleCreate = async () => {
     if (!form.name || !form.phone) { onToast('Name and phone are required', 'error'); return; }
     try {
-      await createCustomer(form);
-      onToast('Customer created successfully!', 'success');
+      if (editingId) {
+        await updateCustomer(editingId, form);
+        onToast('Customer updated successfully!', 'success');
+        setEditingId(null);
+      } else {
+        await createCustomer(form);
+        onToast('Customer created successfully!', 'success');
+      }
       setShowForm(false);
       setForm({ name: '', phone: '', email: '', wedding_date: '', bride_name: '', groom_name: '', venue: '', notes: '' });
       loadData();
-    } catch (e) { onToast(e.response?.data?.detail || 'Error creating customer', 'error'); }
+    } catch (e) { onToast(e.response?.data?.detail || 'Error saving customer', 'error'); }
+  };
+
+  const handleEdit = (customer) => {
+    setEditingId(customer.id);
+    setForm({
+      name: customer.name, phone: customer.phone, email: customer.email || '',
+      wedding_date: customer.wedding_date || '', bride_name: customer.bride_name || '',
+      groom_name: customer.groom_name || '', venue: customer.venue || '', notes: customer.notes || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this customer?')) return;
+    try { await deleteCustomer(id); onToast('Customer deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); }
   };
 
   const viewDetail = async (id) => {
@@ -471,7 +512,11 @@ function Customers({ onToast }) {
                   <td>{c.phone}</td>
                   <td>{c.email || '-'}</td>
                   <td>{c.wedding_date ? new Date(c.wedding_date).toLocaleDateString('en-IN') : '-'}</td>
-                  <td><button className="action-btn edit" onClick={() => viewDetail(c.id)} title="View Details"><i className="fas fa-eye"></i></button></td>
+                  <td>
+                    <button className="action-btn edit" onClick={() => viewDetail(c.id)} title="View"><i className="fas fa-eye"></i></button>
+                    <button className="action-btn edit" onClick={() => handleEdit(c)} title="Edit"><i className="fas fa-edit"></i></button>
+                    <button className="action-btn delete" onClick={() => handleDelete(c.id)} title="Delete"><i className="fas fa-trash"></i></button>
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -568,6 +613,8 @@ function Quotations({ onToast }) {
                         <i className="fas fa-paper-plane"></i>
                       </button>
                     )}
+                    <button className="action-btn edit" onClick={() => window.prompt('Edit #' + q.quote_number + ' (edit in API docs)')} title="Edit"><i className="fas fa-edit"></i></button>
+                    <button className="action-btn delete" onClick={async () => { if (window.confirm('Delete this quotation?')) { try { await deleteQuotation(q.id); onToast('Quotation deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Delete"><i className="fas fa-trash"></i></button>
                   </td>
                 </tr>
               ))}
@@ -723,6 +770,7 @@ function Bookings({ onToast }) {
                   <td>
                     <button className="action-btn edit" onClick={() => handleStatus(b.id)} title="Update Status"><i className="fas fa-arrow-right"></i></button>
                     <button className="action-btn pay" onClick={() => handleRecordPayment(b.id)} title="Record Payment"><i className="fas fa-money-bill"></i></button>
+                    <button className="action-btn delete" onClick={async () => { if (window.confirm('Delete this booking?')) { try { await deleteBooking(b.id); onToast('Booking deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Delete"><i className="fas fa-trash"></i></button>
                   </td>
                 </tr>
               ))}
@@ -806,7 +854,7 @@ function Payments({ onToast }) {
 
       <div className="table-container">
         <table className="data-table">
-          <thead><tr><th>Booking</th><th>Amount</th><th>Type</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+          <thead><tr><th>Booking</th><th>Amount</th><th>Type</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
           <tbody>
             {data.length === 0 ? <tr><td colSpan="6" className="empty-cell"><i className="fas fa-money-bill" style={{ fontSize: 32, opacity: 0.3, display: 'block', marginBottom: 8 }}></i>No payments recorded</td></tr> :
               data.map(p => (
@@ -817,6 +865,9 @@ function Payments({ onToast }) {
                   <td style={{ textTransform: 'capitalize' }}>{p.payment_method}</td>
                   <td><span className={`status status-${p.status}`}>{p.status}</span></td>
                   <td>{p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-IN') : '-'}</td>
+                  <td>
+                    <button className="action-btn delete" onClick={async () => { if (window.confirm('Delete this payment?')) { try { await deletePayment(p.id); onToast('Payment deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Delete"><i className="fas fa-trash"></i></button>
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -896,7 +947,7 @@ function StaffPage({ onToast }) {
 
       <div className="table-container">
         <table className="data-table">
-          <thead><tr><th>Name</th><th>Role</th><th>Specialization</th><th>Available</th><th>Rate</th></tr></thead>
+          <thead><tr><th>Name</th><th>Role</th><th>Specialization</th><th>Available</th><th>Rate</th><th>Actions</th></tr></thead>
           <tbody>
             {data.length === 0 ? <tr><td colSpan="5" className="empty-cell"><i className="fas fa-user-tie" style={{ fontSize: 32, opacity: 0.3, display: 'block', marginBottom: 8 }}></i>No staff members</td></tr> :
               data.map(s => (
@@ -908,6 +959,9 @@ function StaffPage({ onToast }) {
                   <td>{s.specialization || '-'}</td>
                   <td>{s.is_available ? <span style={{ color: 'var(--success)' }}><i className="fas fa-check-circle"></i> Available</span> : <span style={{ color: 'var(--danger)' }}><i className="fas fa-times-circle"></i> Busy</span>}</td>
                   <td>₹{s.daily_rate}/day</td>
+                  <td>
+                    <button className="action-btn delete" onClick={async () => { if (window.confirm('Remove this staff?')) { try { await deleteStaff(s.id); onToast('Staff removed', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Remove"><i className="fas fa-trash"></i></button>
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -1012,6 +1066,7 @@ function Editing({ onToast }) {
                   <td><span className={`status status-${p.status === 'raw_received' ? 'new' : p.status === 'delivered' ? 'completed' : 'qualified'}`}>{p.status.replace('_', ' ')}</span></td>
                   <td>
                     <button className="action-btn edit" onClick={() => handleStatus(p.id)} title="Update Status"><i className="fas fa-arrow-right"></i></button>
+                    <button className="action-btn delete" onClick={async () => { if (window.confirm('Delete this editing project?')) { try { await deleteEditingProject(p.id); onToast('Project deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Delete"><i className="fas fa-trash"></i></button>
                   </td>
                 </tr>
               ))}

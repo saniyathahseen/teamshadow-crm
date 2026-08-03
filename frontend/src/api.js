@@ -54,6 +54,8 @@ export const getDashboard = () => API.get('/dashboard').then(r => r.data);
 export const getCustomers = (search) => API.get(`/customers${search ? `?search=${search}` : ''}`).then(r => r.data);
 export const createCustomer = (data) => API.post('/customers', data).then(r => r.data);
 export const getCustomer = (id) => API.get(`/customers/${id}`).then(r => r.data);
+export const updateCustomer = (id, data) => API.put(`/customers/${id}`, data).then(r => r.data);
+export const deleteCustomer = (id) => API.delete(`/customers/${id}`).then(r => r.data);
 
 // ============================================
 // Inquiries
@@ -68,6 +70,8 @@ export const deleteInquiry = (id) => API.delete(`/inquiries/${id}`).then(r => r.
 // ============================================
 export const getQuotations = () => API.get('/quotations').then(r => r.data);
 export const createQuotation = (data) => API.post('/quotations', data).then(r => r.data);
+export const updateQuotation = (id, data) => API.put(`/quotations/${id}`, data).then(r => r.data);
+export const deleteQuotation = (id) => API.delete(`/quotations/${id}`).then(r => r.data);
 export const sendQuotation = (id) => API.put(`/quotations/${id}/send`).then(r => r.data);
 
 // ============================================
@@ -75,6 +79,8 @@ export const sendQuotation = (id) => API.put(`/quotations/${id}/send`).then(r =>
 // ============================================
 export const getBookings = () => API.get('/bookings').then(r => r.data);
 export const createBooking = (data) => API.post('/bookings', data).then(r => r.data);
+export const updateBooking = (id, data) => API.put(`/bookings/${id}`, data).then(r => r.data);
+export const deleteBooking = (id) => API.delete(`/bookings/${id}`).then(r => r.data);
 export const updateBookingStatus = (id, status) => API.put(`/bookings/${id}/status?status=${status}`).then(r => r.data);
 
 // ============================================
@@ -82,18 +88,24 @@ export const updateBookingStatus = (id, status) => API.put(`/bookings/${id}/stat
 // ============================================
 export const getPayments = (bookingId) => API.get(`/payments${bookingId ? `?booking_id=${bookingId}` : ''}`).then(r => r.data);
 export const createPayment = (data) => API.post('/payments', data).then(r => r.data);
+export const updatePayment = (id, data) => API.put(`/payments/${id}`, data).then(r => r.data);
+export const deletePayment = (id) => API.delete(`/payments/${id}`).then(r => r.data);
 
 // ============================================
 // Staff
 // ============================================
 export const getStaff = () => API.get('/staff').then(r => r.data);
 export const createStaff = (data) => API.post('/staff', data).then(r => r.data);
+export const updateStaff = (id, data) => API.put(`/staff/${id}`, data).then(r => r.data);
+export const deleteStaff = (id) => API.delete(`/staff/${id}`).then(r => r.data);
 
 // ============================================
 // Editing Projects
 // ============================================
 export const getEditingProjects = () => API.get('/editing-projects').then(r => r.data);
 export const createEditingProject = (data) => API.post('/editing-projects', data).then(r => r.data);
+export const updateEditingProject = (id, data) => API.put(`/editing-projects/${id}`, data).then(r => r.data);
+export const deleteEditingProject = (id) => API.delete(`/editing-projects/${id}`).then(r => r.data);
 export const updateEditingStatus = (id, status) => API.put(`/editing-projects/${id}/status?status=${status}`).then(r => r.data);
 
 // ============================================

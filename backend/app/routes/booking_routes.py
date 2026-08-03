@@ -71,6 +71,35 @@ def create_booking(data: BookingCreate, user: User = Depends(get_current_user), 
     return {"id": booking.id, "booking_number": booking_number, "message": "Booking created successfully"}
 
 
+@router.put("/{booking_id}")
+def update_booking(booking_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    for key, value in data.items():
+        if hasattr(booking, key) and value is not None:
+            if key == "event_date" and value:
+                value = datetime.strptime(value, "%Y-%m-%d").date()
+            setattr(booking, key, value)
+    booking.updated_at = datetime.utcnow()
+    db.commit()
+    log = ActivityLog(user_id=user.id, action="updated", entity_type="booking", entity_id=booking.id,
+                     description=f"Updated booking {booking.booking_number}")
+    db.add(log)
+    db.commit()
+    return {"message": "Booking updated successfully"}
+
+
+@router.delete("/{booking_id}")
+def delete_booking(booking_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    db.delete(booking)
+    db.commit()
+    return {"message": "Booking deleted successfully"}
+
+
 @router.put("/{booking_id}/status")
 def update_booking_status(booking_id: int, status: str = Query(...),
                           user: User = Depends(get_current_user), db: Session = Depends(get_db)):

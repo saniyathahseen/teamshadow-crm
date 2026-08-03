@@ -1,5 +1,5 @@
 """
-Quotation routes - create, send, and manage quotations.
+Quotation routes - create, send, update, delete quotations.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -76,6 +76,43 @@ def create_quotation(data: QuotationCreate, user: User = Depends(get_current_use
     db.commit()
     return {"id": quotation.id, "quote_number": quote_number, "total_amount": total,
             "message": "Quotation created successfully"}
+
+
+@router.put("/{quotation_id}")
+def update_quotation(quotation_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+    for key, value in data.items():
+        if hasattr(quotation, key) and value is not None:
+            if key == "valid_until" and value:
+                value = datetime.strptime(value, "%Y-%m-%d").date()
+            setattr(quotation, key, value)
+    # Recalculate total
+    total = quotation.base_amount
+    if quotation.discount_type == "percentage" and quotation.discount > 0:
+        total = total - (total * quotation.discount / 100)
+    else:
+        total = total - quotation.discount
+    if quotation.gst > 0:
+        total = total + (total * quotation.gst / 100)
+    quotation.total_amount = max(0, total)
+    db.commit()
+    log = ActivityLog(user_id=user.id, action="updated", entity_type="quotation", entity_id=quotation.id,
+                     description=f"Updated quotation {quotation.quote_number}")
+    db.add(log)
+    db.commit()
+    return {"message": "Quotation updated successfully", "total_amount": quotation.total_amount}
+
+
+@router.delete("/{quotation_id}")
+def delete_quotation(quotation_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+    db.delete(quotation)
+    db.commit()
+    return {"message": "Quotation deleted successfully"}
 
 
 @router.put("/{quotation_id}/send")

@@ -40,6 +40,28 @@ def list_payments(booking_id: Optional[int] = None, user: User = Depends(get_cur
     ]
 
 
+@router.put("/{payment_id}")
+def update_payment(payment_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    for key, value in data.items():
+        if hasattr(payment, key) and value is not None:
+            setattr(payment, key, value)
+    db.commit()
+    return {"message": "Payment updated successfully"}
+
+
+@router.delete("/{payment_id}")
+def delete_payment(payment_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    db.delete(payment)
+    db.commit()
+    return {"message": "Payment deleted successfully"}
+
+
 @router.post("")
 def create_payment(data: PaymentCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     payment = Payment(
