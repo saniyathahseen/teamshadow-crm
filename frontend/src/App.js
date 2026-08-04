@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject } from './api';
+import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject, getTasks, createTask, updateTask, staffUpdateTask, deleteTask } from './api';
 import './App.css';
 
 // ============================================
@@ -66,15 +66,19 @@ function Login({ onLogin }) {
 // Sidebar Component
 // ============================================
 function Sidebar({ user, activeSection, onNavigate, counts }) {
+  const isAdmin = user?.role === 'admin';
   const menuItems = [
     { id: 'dashboard', icon: 'fa-th-large', label: 'Dashboard' },
-    { id: 'inquiries', icon: 'fa-inbox', label: 'Inquiries', count: counts.inquiries },
-    { id: 'customers', icon: 'fa-users', label: 'Customers' },
-    { id: 'quotations', icon: 'fa-file-invoice', label: 'Quotations', count: counts.quotations },
-    { id: 'bookings', icon: 'fa-check-circle', label: 'Bookings', count: counts.bookings },
-    { id: 'editing', icon: 'fa-film', label: 'Editing' },
-    { id: 'payments', icon: 'fa-money-bill', label: 'Payments' },
-    { id: 'staff', icon: 'fa-user-tie', label: 'Staff' },
+    { id: 'tasks', icon: 'fa-tasks', label: 'My Tasks' },
+    ...(isAdmin ? [
+      { id: 'inquiries', icon: 'fa-inbox', label: 'Inquiries', count: counts.inquiries },
+      { id: 'customers', icon: 'fa-users', label: 'Customers' },
+      { id: 'quotations', icon: 'fa-file-invoice', label: 'Quotations', count: counts.quotations },
+      { id: 'bookings', icon: 'fa-check-circle', label: 'Bookings', count: counts.bookings },
+      { id: 'editing', icon: 'fa-film', label: 'Editing' },
+      { id: 'payments', icon: 'fa-money-bill', label: 'Payments' },
+      { id: 'staff', icon: 'fa-user-tie', label: 'Staff' },
+    ] : []),
   ];
 
   return (
@@ -1119,6 +1123,128 @@ function Portal() {
 }
 
 // ============================================
+// Tasks Page
+// ============================================
+function TasksPage({ onToast, currentUser }) {
+  const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', description: '', assigned_to: '', priority: 'medium', due_date: '', status: 'pending' });
+  const isAdmin = currentUser?.role === 'admin';
+
+  useEffect(() => { loadTasks(); loadUsers(); }, []);
+
+  const loadTasks = async () => {
+    try { setTasks(await getTasks()); } catch (e) { console.error(e); }
+  };
+  const loadUsers = async () => {
+    try { setUsers(await getUsers()); } catch (e) { console.error(e); }
+  };
+
+  const handleCreate = async () => {
+    if (!form.title) { onToast('Task title is required', 'error'); return; }
+    if (!form.assigned_to) { onToast('Please assign this task to a staff member', 'error'); return; }
+    try {
+      await createTask({
+        title: form.title, description: form.description,
+        assigned_to: parseInt(form.assigned_to), priority: form.priority,
+        due_date: form.due_date || undefined, status: 'pending'
+      });
+      onToast('Task created and assigned!', 'success');
+      setShowForm(false);
+      setForm({ title: '', description: '', assigned_to: '', priority: 'medium', due_date: '', status: 'pending' });
+      loadTasks();
+    } catch (e) { onToast(e.response?.data?.detail || 'Error creating task', 'error'); }
+  };
+
+  const handleStaffUpdate = async (taskId) => {
+    const statuses = ['pending', 'in_progress', 'completed'];
+    const status = window.prompt(`Update task status to:\n${statuses.join(', ')}`);
+    if (status && statuses.includes(status)) {
+      const note = window.prompt('Add an update note (optional):');
+      try {
+        await staffUpdateTask(taskId, { status, update_note: note || undefined });
+        onToast(`Task updated to ${status}!`, 'success');
+        loadTasks();
+      } catch (e) { onToast('Error updating task', 'error'); }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this task?')) return;
+    try { await deleteTask(id); onToast('Task deleted', 'success'); loadTasks(); } catch (e) { onToast('Error deleting', 'error'); }
+  };
+
+  const priorityColors = { low: '#10b981', medium: '#f59e0b', high: '#ef4444', urgent: '#dc2626' };
+  const statusLabels = { pending: '⏳ Pending', in_progress: '🔄 In Progress', completed: '✅ Completed' };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1><i className="fas fa-tasks"></i> Tasks</h1>
+        {isAdmin && (
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            <i className="fas fa-plus"></i> Assign Task
+          </button>
+        )}
+      </div>
+
+      {showForm && isAdmin && (
+        <div className="form-card">
+          <h3><i className="fas fa-clipboard-list"></i> Assign Task to Staff</h3>
+          <div className="form-group"><label>Task Title *</label><input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Edit wedding highlight video" /></div>
+          <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows="2" placeholder="Task details..."></textarea></div>
+          <div className="form-row">
+            <div className="form-group"><label>Assign To *</label>
+              <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })}>
+                <option value="">Select staff</option>
+                {users.filter(u => u.role !== 'admin').map(u => <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Priority</label>
+              <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
+                <option value="low">Low</option><option value="medium">Medium</option>
+                <option value="high">High</option><option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-group"><label>Due Date</label><input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setShowForm(false)}><i className="fas fa-times"></i> Cancel</button>
+            <button className="btn btn-primary" onClick={handleCreate}><i className="fas fa-paper-plane"></i> Assign Task</button>
+          </div>
+        </div>
+      )}
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead><tr><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Update Note</th><th>Actions</th></tr></thead>
+          <tbody>
+            {tasks.length === 0 ? <tr><td colSpan="7" className="empty-cell"><i className="fas fa-tasks" style={{ fontSize: 32, opacity: 0.3, display: 'block', marginBottom: 8 }}></i>No tasks assigned</td></tr> :
+              tasks.map(t => (
+                <tr key={t.id}>
+                  <td><strong>{t.title}</strong>{t.description && <div className="text-muted">{t.description}</div>}</td>
+                  <td>{t.assigned_to?.full_name || 'Unassigned'}</td>
+                  <td><span className="status" style={{ background: priorityColors[t.priority] + '22', color: priorityColors[t.priority] }}>{t.priority}</span></td>
+                  <td><span className={`status status-${t.status === 'in_progress' ? 'contacted' : t.status === 'completed' ? 'completed' : 'new'}`}>{statusLabels[t.status] || t.status}</span></td>
+                  <td>{t.due_date ? new Date(t.due_date).toLocaleDateString('en-IN') : '-'}</td>
+                  <td style={{ maxWidth: 200 }}>{t.update_note || '-'}</td>
+                  <td>
+                    <button className="action-btn edit" onClick={() => handleStaffUpdate(t.id)} title="Update Progress"><i className="fas fa-check"></i></button>
+                    {isAdmin && (
+                      <button className="action-btn delete" onClick={() => handleDelete(t.id)} title="Delete"><i className="fas fa-trash"></i></button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Helper
 // ============================================
 function timeAgo(dateStr) {
@@ -1174,9 +1300,10 @@ function App() {
   if (!user) return <Login onLogin={handleLogin} />;
 
   const renderSection = () => {
-    const props = { onToast: addToast };
+    const props = { onToast: addToast, currentUser: user };
     switch (section) {
       case 'dashboard': return <Dashboard />;
+      case 'tasks': return <TasksPage {...props} />;
       case 'inquiries': return <Inquiries {...props} />;
       case 'customers': return <Customers {...props} />;
       case 'quotations': return <Quotations {...props} />;

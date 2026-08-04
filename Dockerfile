@@ -1,15 +1,15 @@
-FROM python:3.14-slim AS backend
+FROM python:3.11-slim AS backend
 
 WORKDIR /app
 
-# Install system dependencies for psycopg2
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev && \
+    gcc && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from correct location
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt || pip install --no-cache-dir "fastapi>=0.110.0" "uvicorn>=0.24.0" "sqlalchemy>=2.0.30" "python-jose[cryptography]" "pydantic>=2.0.0" "python-multipart"
 
 # Copy backend source
 COPY backend/ .

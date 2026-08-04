@@ -115,6 +115,15 @@ export const getUsers = () => API.get('/users').then(r => r.data);
 export const createUser = (data) => API.post('/users', data).then(r => r.data);
 
 // ============================================
+// Tasks
+// ============================================
+export const getTasks = (params) => API.get('/tasks', { params }).then(r => r.data);
+export const createTask = (data) => API.post('/tasks', data).then(r => r.data);
+export const updateTask = (id, data) => API.put(`/tasks/${id}`, data).then(r => r.data);
+export const staffUpdateTask = (id, data) => API.post(`/tasks/${id}/update`, data).then(r => r.data);
+export const deleteTask = (id) => API.delete(`/tasks/${id}`).then(r => r.data);
+
+// ============================================
 // Activity
 // ============================================
 export const getActivity = () => API.get('/activity').then(r => r.data);

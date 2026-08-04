@@ -199,3 +199,24 @@ class ActivityLog(Base):
     entity_id = Column(Integer)
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(Text, nullable=True)
+    status = Column(String, default='pending')  # pending, in_progress, completed, cancelled
+    priority = Column(String, default='medium')  # low, medium, high, urgent
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    due_date = Column(Date, nullable=True)
+    related_type = Column(String, nullable=True)  # customer, inquiry, booking, etc.
+    related_id = Column(Integer, nullable=True)
+    update_note = Column(Text, nullable=True)  # Staff update about task
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    assignee = relationship("User", foreign_keys=[assigned_to], backref="assigned_tasks")
+    creator = relationship("User", foreign_keys=[created_by])
