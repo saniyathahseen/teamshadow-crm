@@ -886,28 +886,53 @@ function Payments({ onToast }) {
 // ============================================
 function StaffPage({ onToast }) {
   const [data, setData] = useState([]);
-  const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ user_id: '', role: 'photographer', specialization: '', phone: '', daily_rate: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', role: 'photographer', specialization: '', phone: '', daily_rate: '' });
 
-  useEffect(() => { loadData(); loadUsers(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => { try { setData(await getStaff()); } catch (e) { console.error(e); } };
-  const loadUsers = async () => { try { setUsers(await getUsers()); } catch (e) { console.error(e); } };
 
   const handleCreate = async () => {
-    if (!form.user_id) { onToast('Please select a user', 'error'); return; }
+    if (!form.username) { onToast('Username is required', 'error'); return; }
+    if (!form.password || form.password.length < 6) { onToast('Password must be at least 6 characters', 'error'); return; }
+    if (!form.full_name) { onToast('Full name is required', 'error'); return; }
     try {
-      const { createStaff } = await import('./api');
-      await createStaff({
-        user_id: parseInt(form.user_id), role: form.role,
-        specialization: form.specialization, phone: form.phone,
-        daily_rate: parseFloat(form.daily_rate) || 0
-      });
-      onToast('Staff added successfully!', 'success');
+      if (editingId) {
+        await updateStaff(editingId, {
+          full_name: form.full_name, role: form.role,
+          specialization: form.specialization, phone: form.phone,
+          daily_rate: parseFloat(form.daily_rate) || 0,
+          email: form.email,
+          password: form.password || undefined
+        });
+        onToast('Staff updated successfully!', 'success');
+        setEditingId(null);
+      } else {
+        const res = await createStaff({
+          username: form.username, password: form.password,
+          full_name: form.full_name, email: form.email,
+          role: form.role, specialization: form.specialization,
+          phone: form.phone, daily_rate: parseFloat(form.daily_rate) || 0
+        });
+        onToast(res.message || 'Staff added successfully!', 'success');
+      }
       setShowForm(false);
+      setForm({ username: '', password: '', full_name: '', email: '', role: 'photographer', specialization: '', phone: '', daily_rate: '' });
       loadData();
-    } catch (e) { onToast('Error adding staff', 'error'); }
+    } catch (e) { onToast(e.response?.data?.detail || 'Error adding staff', 'error'); }
+  };
+
+  const handleEdit = (staff) => {
+    setEditingId(staff.id);
+    setForm({
+      username: staff.username || '', password: '', full_name: staff.name || '',
+      email: '', role: staff.role || 'photographer',
+      specialization: staff.specialization || '', phone: staff.phone || '',
+      daily_rate: staff.daily_rate || ''
+    });
+    setShowForm(true);
   };
 
   return (
@@ -919,15 +944,14 @@ function StaffPage({ onToast }) {
 
       {showForm && (
         <div className="form-card">
-          <h3><i className="fas fa-user-plus"></i> Add Staff Member</h3>
-          <div className="form-group"><label>User *</label>
-            {/* <select value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })}>
-              <option value="">Select user</option>
-              {users.filter(u => u.role !== 'admin').map(u => (
-                <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>
-              ))}
-            </select> */}
-            <input value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })} placeholder="Enter user ID" />
+          <h3><i className="fas fa-user-plus"></i> {editingId ? 'Edit Staff Member' : 'Add Staff Member'}</h3>
+          <div className="form-row">
+            <div className="form-group"><label>Full Name *</label><input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} placeholder="e.g. John Doe" /></div>
+            <div className="form-group"><label>Username *</label><input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="e.g. john" disabled={!!editingId} /></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Password *</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={editingId ? 'Leave blank to keep current' : 'Min 6 characters'} /></div>
+            <div className="form-group"><label>Email</label><input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" /></div>
           </div>
           <div className="form-row">
             <div className="form-group"><label>Role</label>
@@ -944,8 +968,8 @@ function StaffPage({ onToast }) {
             <div className="form-group"><label>Daily Rate (₹)</label><input type="number" value={form.daily_rate} onChange={e => setForm({ ...form, daily_rate: e.target.value })} placeholder="e.g. 5000" /></div>
           </div>
           <div className="form-actions">
-            <button className="btn btn-secondary" onClick={() => setShowForm(false)}><i className="fas fa-times"></i> Cancel</button>
-            <button className="btn btn-primary" onClick={handleCreate}><i className="fas fa-user-plus"></i> Add Staff</button>
+            <button className="btn btn-secondary" onClick={() => { setShowForm(false); setEditingId(null); }}><i className="fas fa-times"></i> Cancel</button>
+            <button className="btn btn-primary" onClick={handleCreate}><i className="fas fa-user-plus"></i> {editingId ? 'Update Staff' : 'Add Staff'}</button>
           </div>
         </div>
       )}
