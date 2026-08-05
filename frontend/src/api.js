@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Use relative path so it works with both local dev and Docker (nginx proxy)
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
+
 const API = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' }
 });
 

@@ -921,12 +921,13 @@ function StaffPage({ onToast }) {
         <div className="form-card">
           <h3><i className="fas fa-user-plus"></i> Add Staff Member</h3>
           <div className="form-group"><label>User *</label>
-            <select value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })}>
+            {/* <select value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })}>
               <option value="">Select user</option>
               {users.filter(u => u.role !== 'admin').map(u => (
                 <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>
               ))}
-            </select>
+            </select> */}
+            <input value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })} placeholder="Enter user ID" />
           </div>
           <div className="form-row">
             <div className="form-group"><label>Role</label>

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teamshadow-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+      - teamshadow_data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./teamshadow.db
+      - SECRET_KEY=teamshadow-wedding-crm-secret-key-2024-very-secure
+    networks:
+      - teamshadow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: teamshadow-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - teamshadow-network
+
+volumes:
+  teamshadow_data:
+
+networks:
+  teamshadow-network:
+    driver: bridge
