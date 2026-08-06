@@ -201,6 +201,37 @@ class ActivityLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Lead(Base):
+    __tablename__ = "leads"
+    id = Column(Integer, primary_key=True, index=True)
+    whatsapp_number = Column(String, index=True)
+    customer_name = Column(String, nullable=True)
+    wedding_date = Column(String, nullable=True)
+    wedding_location = Column(String, nullable=True)
+    services = Column(JSON, nullable=True)
+    budget = Column(Float, nullable=True)
+    lead_source = Column(String, default='whatsapp')  # facebook, instagram, organic
+    conversation_state = Column(String, default='welcome')  # welcome, collecting_name, collecting_date, collecting_location, collecting_services, collecting_budget, complete, human
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    status = Column(String, default='new_lead')  # new_lead, qualified, contacted, booked, lost
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    assignee = relationship("User", foreign_keys=[assigned_to])
+    conversations = relationship("Conversation", back_populates="lead", cascade="all, delete-orphan")
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    id = Column(Integer, primary_key=True, index=True)
+    lead_id = Column(Integer, ForeignKey("leads.id"))
+    sender = Column(String)  # user, bot, agent
+    message = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    lead = relationship("Lead", back_populates="conversations")
+
+
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)

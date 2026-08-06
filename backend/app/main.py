@@ -16,6 +16,7 @@ from app.routes.staff_routes import router as staff_router
 from app.routes.editing_routes import router as editing_router
 from app.routes.extra_routes import router as extra_router
 from app.routes.task_routes import router as task_router
+from app.routes.webhook_routes import router as webhook_router
 
 app = FastAPI(
     title="Team Shadow Weddings CRM",
@@ -44,6 +45,7 @@ app.include_router(staff_router)
 app.include_router(editing_router)
 app.include_router(extra_router)
 app.include_router(task_router)
+app.include_router(webhook_router)
 
 
 @app.on_event("startup")
