@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject, getTasks, createTask, updateTask, staffUpdateTask, deleteTask } from './api';
+import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject, getTasks, createTask, updateTask, staffUpdateTask, deleteTask, getLeads, getLead, updateLead, sendLeadMessage, exportLead } from './api';
 import './App.css';
 
 // ============================================
@@ -71,6 +71,7 @@ function Sidebar({ user, activeSection, onNavigate, counts }) {
     { id: 'dashboard', icon: 'fa-th-large', label: 'Dashboard' },
     { id: 'tasks', icon: 'fa-tasks', label: 'My Tasks' },
     ...(isAdmin ? [
+      { id: 'leads', icon: 'fab fa-whatsapp', label: 'WhatsApp Inbox' },
       { id: 'inquiries', icon: 'fa-inbox', label: 'Inquiries', count: counts.inquiries },
       { id: 'customers', icon: 'fa-users', label: 'Customers' },
       { id: 'quotations', icon: 'fa-file-invoice', label: 'Quotations', count: counts.quotations },
@@ -1270,6 +1271,182 @@ function TasksPage({ onToast, currentUser }) {
 }
 
 // ============================================
+// WhatsApp Leads Inbox Page
+// ============================================
+function LeadsPage({ onToast, currentUser }) {
+  const [leads, setLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [replyText, setReplyText] = useState('');
+  const isAdmin = currentUser?.role === 'admin';
+
+  useEffect(() => { loadLeads(); }, [filter, search]);
+
+  const loadLeads = async () => {
+    try {
+      setLeads(await getLeads({ status: filter, search: search || undefined }));
+    } catch (e) { console.error(e); }
+  };
+
+  const openLead = async (id) => {
+    try { setSelectedLead(await getLead(id)); } catch (e) { console.error(e); }
+  };
+
+  const handleSend = async () => {
+    if (!replyText.trim() || !selectedLead) return;
+    try {
+      await sendLeadMessage({ lead_id: selectedLead.id, message: replyText });
+      onToast('Message sent!', 'success');
+      setReplyText('');
+      openLead(selectedLead.id); // Refresh conversation
+    } catch (e) { onToast('Error sending message', 'error'); }
+  };
+
+  const handleStatusChange = async (status) => {
+    if (!selectedLead) return;
+    try {
+      await updateLead(selectedLead.id, { status });
+      onToast(`Lead marked as ${status}`, 'success');
+      openLead(selectedLead.id);
+      loadLeads();
+    } catch (e) { onToast('Error updating status', 'error'); }
+  };
+
+  const statusColors = {
+    new_lead: '#f59e0b',
+    qualified: '#6366f1',
+    contacted: '#3b82f6',
+    booked: '#10b981',
+    lost: '#ef4444'
+  };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1><i className="fab fa-whatsapp" style={{ color: '#25d366' }}></i> WhatsApp Inbox</h1>
+        <p>Manage customer conversations in one dashboard. Zero forgotten follow-ups.</p>
+        <div className="page-actions">
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="filter-select">
+            <option value="all">All Leads</option>
+            <option value="new_lead">New</option>
+            <option value="qualified">Qualified</option>
+            <option value="contacted">Contacted</option>
+            <option value="booked">Won</option>
+            <option value="lost">Lost</option>
+          </select>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, phone, or location..."
+            className="filter-select"
+            style={{ width: 250 }}
+          />
+        </div>
+      </div>
+
+      <div className="portal-grid" style={{ gridTemplateColumns: selectedLead ? '1fr 1.5fr' : '1fr' }}>
+        {/* Leads List */}
+        <div className="card">
+          <div className="card-header"><h3>Leads ({leads.length})</h3></div>
+          <div className="card-body" style={{ maxHeight: 600, overflowY: 'auto' }}>
+            {leads.length === 0 ? (
+              <div className="empty-state"><i className="fab fa-whatsapp"></i><p>No leads yet. Leads from WhatsApp ads will appear here.</p></div>
+            ) : leads.map(l => (
+              <div
+                key={l.id}
+                className="activity-item"
+                style={{ cursor: 'pointer', background: selectedLead?.id === l.id ? '#eef2ff' : 'transparent', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 8 }}
+                onClick={() => openLead(l.id)}
+              >
+                <div className="user-avatar-sm">{l.customer_name?.split(' ').map(w => w[0]).join('').slice(0, 2) || '?'}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>{l.customer_name || `Lead #${l.id}`}</strong>
+                    <span style={{ fontSize: 11, color: 'var(--text-light)' }}>{timeAgo(l.created_at)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {l.wedding_date || 'Date TBD'} {l.wedding_location ? `• ${l.wedding_location}` : ''}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                    <span className="status" style={{ background: statusColors[l.status] + '22', color: statusColors[l.status] }}>{l.status.replace('_', ' ')}</span>
+                    {l.budget && <span style={{ fontSize: 11 }}>₹{l.budget.toLocaleString()}</span>}
+                    <span style={{ fontSize: 11, color: 'var(--text-light)' }}>{l.conversation_count} msgs</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Conversation View */}
+        {selectedLead && (
+          <div className="card">
+            <div className="card-header">
+              <h3>{selectedLead.customer_name || `Lead #${selectedLead.id}`} <span style={{ fontSize: 12, color: 'var(--text-light)' }}>• {selectedLead.whatsapp_number}</span></h3>
+            </div>
+            <div className="card-body" style={{ maxHeight: 400, overflowY: 'auto' }}>
+              {/* Lead Summary */}
+              <div style={{ background: 'var(--bg)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                {selectedLead.wedding_date && <div><strong>📅 Date:</strong> {selectedLead.wedding_date}</div>}
+                {selectedLead.wedding_location && <div><strong>📍 Location:</strong> {selectedLead.wedding_location}</div>}
+                {selectedLead.services?.length > 0 && <div><strong>✨ Services:</strong> {selectedLead.services.join(', ')}</div>}
+                {selectedLead.budget && <div><strong>💰 Budget:</strong> ₹{selectedLead.budget.toLocaleString()}</div>}
+              </div>
+
+              {/* Conversation */}
+              {selectedLead.conversations?.map(c => (
+                <div key={c.id} style={{
+                  display: 'flex',
+                  justifyContent: c.sender === 'user' ? 'flex-end' : 'flex-start',
+                  marginBottom: 8
+                }}>
+                  <div style={{
+                    maxWidth: '80%',
+                    background: c.sender === 'user' ? '#25d366' : '#f1f5f9',
+                    color: c.sender === 'user' ? 'white' : 'var(--text)',
+                    padding: '8px 12px',
+                    borderRadius: 12,
+                    fontSize: 13
+                  }}>
+                    <div>{c.message}</div>
+                    <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
+                      {c.sender} • {timeAgo(c.timestamp)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Reply Box */}
+            <div className="card-body" style={{ borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  placeholder="Type a reply... (human takeover)"
+                  style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8 }}
+                />
+                <button className="btn btn-primary" onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                <button className="btn btn-sm btn-secondary" onClick={() => handleStatusChange('qualified')}>✓ Qualify</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => handleStatusChange('contacted')}>📞 Contacted</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => handleStatusChange('booked')}>🏆 Won</button>
+                <button className="btn btn-sm btn-secondary" onClick={() => handleStatusChange('lost')}>✗ Lost</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Helper
 // ============================================
 function timeAgo(dateStr) {
@@ -1329,6 +1506,7 @@ function App() {
     switch (section) {
       case 'dashboard': return <Dashboard />;
       case 'tasks': return <TasksPage {...props} />;
+      case 'leads': return <LeadsPage {...props} />;
       case 'inquiries': return <Inquiries {...props} />;
       case 'customers': return <Customers {...props} />;
       case 'quotations': return <Quotations {...props} />;

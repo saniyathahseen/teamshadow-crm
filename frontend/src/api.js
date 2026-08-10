@@ -127,6 +127,15 @@ export const staffUpdateTask = (id, data) => API.post(`/tasks/${id}/update`, dat
 export const deleteTask = (id) => API.delete(`/tasks/${id}`).then(r => r.data);
 
 // ============================================
+// Leads (WhatsApp Inbox)
+// ============================================
+export const getLeads = (params) => API.get('/leads', { params }).then(r => r.data);
+export const getLead = (id) => API.get(`/lead/${id}`).then(r => r.data);
+export const updateLead = (id, data) => API.patch(`/lead/${id}`, data).then(r => r.data);
+export const sendLeadMessage = (data) => API.post('/send-message', data).then(r => r.data);
+export const exportLead = (id) => API.get(`/lead/${id}/export`).then(r => r.data);
+
+// ============================================
 // Activity
 // ============================================
 export const getActivity = () => API.get('/activity').then(r => r.data);
