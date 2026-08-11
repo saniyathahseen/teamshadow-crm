@@ -17,6 +17,7 @@ class User(Base):
     full_name = Column(String)
     role = Column(String, default='sales')
     is_active = Column(Boolean, default=True)
+    business_id = Column(Integer, ForeignKey("businesses.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -230,6 +231,53 @@ class Conversation(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     lead = relationship("Lead", back_populates="conversations")
+
+
+class Business(Base):
+    __tablename__ = "businesses"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    industry = Column(String, nullable=True)  # wedding, real_estate, salon, clinic, agency, ecommerce
+    timezone = Column(String, default='Asia/Dubai')
+    whatsapp_number = Column(String, nullable=True)
+    services = Column(JSON, nullable=True)  # List of services/packages
+    starting_price = Column(Float, nullable=True)
+    working_hours = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    users = relationship("User", backref="business")
+    knowledge_items = relationship("KnowledgeBase", back_populates="business", cascade="all, delete-orphan")
+    automations = relationship("Automation", back_populates="business", cascade="all, delete-orphan")
+
+
+class KnowledgeBase(Base):
+    __tablename__ = "knowledge_base"
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("businesses.id"))
+    question = Column(String)
+    answer = Column(Text)
+    keywords = Column(JSON, nullable=True)  # Related keywords for matching
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    business = relationship("Business", back_populates="knowledge_items")
+
+
+class Automation(Base):
+    __tablename__ = "automations"
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("businesses.id"))
+    name = Column(String)
+    trigger = Column(String)  # LEAD_CREATED, NO_CUSTOMER_REPLY, STATUS_CHANGED
+    action = Column(String)  # SEND_AI_REPLY, SEND_FOLLOWUP, NOTIFY_TEAM
+    delay_hours = Column(Integer, default=0)
+    message_template = Column(Text, nullable=True)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    business = relationship("Business", back_populates="automations")
 
 
 class Task(Base):

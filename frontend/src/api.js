@@ -136,6 +136,20 @@ export const sendLeadMessage = (data) => API.post('/send-message', data).then(r 
 export const exportLead = (id) => API.get(`/lead/${id}/export`).then(r => r.data);
 
 // ============================================
+// Business & Automations
+// ============================================
+export const getBusiness = () => API.get('/business').then(r => r.data);
+export const updateBusiness = (data) => API.put('/business', data).then(r => r.data);
+export const getKnowledgeBase = () => API.get('/knowledge-base').then(r => r.data);
+export const createKnowledge = (data) => API.post('/knowledge-base', data).then(r => r.data);
+export const deleteKnowledge = (id) => API.delete(`/knowledge-base/${id}`).then(r => r.data);
+export const getAutomations = () => API.get('/automations').then(r => r.data);
+export const createAutomation = (data) => API.post('/automations', data).then(r => r.data);
+export const toggleAutomation = (id, data) => API.patch(`/automations/${id}`, data).then(r => r.data);
+export const deleteAutomation = (id) => API.delete(`/automations/${id}`).then(r => r.data);
+export const runFollowUps = () => API.post('/automations/run-follow-ups').then(r => r.data);
+
+// ============================================
 // Activity
 // ============================================
 export const getActivity = () => API.get('/activity').then(r => r.data);
