@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject, getTasks, createTask, updateTask, staffUpdateTask, deleteTask, getLeads, getLead, updateLead, sendLeadMessage, exportLead } from './api';
+import { login, logout, getDashboard, getCustomers, getInquiries, getQuotations, getBookings, getPayments, getStaff, getEditingProjects, getActivity, createCustomer, createInquiry, createQuotation, createBooking, createPayment, createEditingProject, sendQuotation, updateBookingStatus, updateEditingStatus, deleteInquiry, getCustomer, createStaff, getUsers, createDeliverable, createExpense, updateCustomer, deleteCustomer, updateInquiry, updateQuotation, deleteQuotation, updateBooking, deleteBooking, updatePayment, deletePayment, updateStaff, deleteStaff, updateEditingProject, deleteEditingProject, getTasks, createTask, updateTask, staffUpdateTask, deleteTask, getLeads, getLead, updateLead, sendLeadMessage, exportLead, getBusiness, updateBusiness, getKnowledgeBase, createKnowledge, deleteKnowledge, getAutomations, createAutomation, toggleAutomation, deleteAutomation, runFollowUps } from './api';
 import './App.css';
 
 // ============================================
@@ -79,6 +79,8 @@ function Sidebar({ user, activeSection, onNavigate, counts }) {
       { id: 'editing', icon: 'fa-film', label: 'Editing' },
       { id: 'payments', icon: 'fa-money-bill', label: 'Payments' },
       { id: 'staff', icon: 'fa-user-tie', label: 'Staff' },
+      { id: 'automations', icon: 'fa-robot', label: 'Automations' },
+      { id: 'settings', icon: 'fa-cog', label: 'Settings' },
     ] : []),
   ];
 
@@ -1447,6 +1449,245 @@ function LeadsPage({ onToast, currentUser }) {
 }
 
 // ============================================
+// Automations Page
+// ============================================
+function AutomationsPage({ onToast }) {
+  const [automations, setAutomations] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: '', trigger: 'NO_CUSTOMER_REPLY', action: 'SEND_FOLLOWUP', delay_hours: 24, message_template: '', active: true });
+
+  useEffect(() => { loadAutomations(); }, []);
+
+  const loadAutomations = async () => {
+    try { setAutomations(await getAutomations()); } catch (e) { console.error(e); }
+  };
+
+  const handleCreate = async () => {
+    if (!form.name) { onToast('Automation name is required', 'error'); return; }
+    try {
+      await createAutomation(form);
+      onToast('Automation created!', 'success');
+      setShowForm(false);
+      setForm({ name: '', trigger: 'NO_CUSTOMER_REPLY', action: 'SEND_FOLLOWUP', delay_hours: 24, message_template: '', active: true });
+      loadAutomations();
+    } catch (e) { onToast('Error creating automation', 'error'); }
+  };
+
+  const handleToggle = async (id, active) => {
+    try { await toggleAutomation(id, { active: !active }); loadAutomations(); }
+    catch (e) { onToast('Error toggling', 'error'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this automation?')) return;
+    try { await deleteAutomation(id); onToast('Automation deleted', 'success'); loadAutomations(); }
+    catch (e) { onToast('Error deleting', 'error'); }
+  };
+
+  const handleRunNow = async () => {
+    try {
+      const res = await runFollowUps();
+      onToast(`Checked follow-ups: ${res.follow_ups_sent} sent`, 'success');
+    } catch (e) { onToast('Error running follow-ups', 'error'); }
+  };
+
+  const triggerLabels = { LEAD_CREATED: 'When Lead Created', NO_CUSTOMER_REPLY: 'No Customer Reply', STATUS_CHANGED: 'Status Changed' };
+  const actionLabels = { SEND_AI_REPLY: 'Send AI Reply', SEND_FOLLOWUP: 'Send Follow-up', NOTIFY_TEAM: 'Notify Team' };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1><i className="fas fa-robot"></i> Automations</h1>
+        <p>Automate follow-ups so no customer is forgotten</p>
+        <div className="page-actions">
+          <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setForm({ name: '', trigger: 'NO_CUSTOMER_REPLY', action: 'SEND_FOLLOWUP', delay_hours: 24, message_template: '', active: true }); }}>
+            <i className="fas fa-plus"></i> New Automation
+          </button>
+          <button className="btn btn-secondary" onClick={handleRunNow}>
+            <i className="fas fa-play"></i> Run Follow-ups Now
+          </button>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="form-card">
+          <h3><i className="fas fa-plus-circle"></i> New Automation</h3>
+          <div className="form-row">
+            <div className="form-group"><label>Name *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. 24h Follow-up" /></div>
+            <div className="form-group"><label>Trigger</label>
+              <select value={form.trigger} onChange={e => setForm({ ...form, trigger: e.target.value })}>
+                <option value="NO_CUSTOMER_REPLY">No Customer Reply</option>
+                <option value="LEAD_CREATED">Lead Created</option>
+                <option value="STATUS_CHANGED">Status Changed</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Action</label>
+              <select value={form.action} onChange={e => setForm({ ...form, action: e.target.value })}>
+                <option value="SEND_FOLLOWUP">Send Follow-up</option>
+                <option value="SEND_AI_REPLY">Send AI Reply</option>
+                <option value="NOTIFY_TEAM">Notify Team</option>
+              </select>
+            </div>
+            <div className="form-group"><label>Delay (hours)</label><input type="number" value={form.delay_hours} onChange={e => setForm({ ...form, delay_hours: parseInt(e.target.value) || 0 })} min="0" /></div>
+          </div>
+          <div className="form-group"><label>Message Template</label><textarea value={form.message_template} onChange={e => setForm({ ...form, message_template: e.target.value })} rows="2" placeholder="Hi! Just checking if you'd still like our packages. Let us know! 😊" /></div>
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setShowForm(false)}><i className="fas fa-times"></i> Cancel</button>
+            <button className="btn btn-primary" onClick={handleCreate}><i className="fas fa-robot"></i> Create Automation</button>
+          </div>
+        </div>
+      )}
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead><tr><th>Name</th><th>Trigger</th><th>Action</th><th>Delay</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            {automations.length === 0 ? <tr><td colSpan="6" className="empty-cell"><i className="fas fa-robot" style={{ fontSize: 32, opacity: 0.3, display: 'block', marginBottom: 8 }}></i>No automations yet. Create one to auto-follow-up with customers!</td></tr> :
+              automations.map(a => (
+                <tr key={a.id}>
+                  <td><strong>{a.name}</strong></td>
+                  <td>{triggerLabels[a.trigger] || a.trigger}</td>
+                  <td>{actionLabels[a.action] || a.action}</td>
+                  <td>{a.delay_hours > 0 ? `${a.delay_hours}h` : 'Immediate'}</td>
+                  <td>
+                    <button className={`btn btn-sm ${a.active ? 'btn-primary' : 'btn-secondary'}`} onClick={() => handleToggle(a.id, a.active)}>
+                      {a.active ? 'ON' : 'OFF'}
+                    </button>
+                  </td>
+                  <td>
+                    <button className="action-btn delete" onClick={() => handleDelete(a.id)} title="Delete"><i className="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Settings Page
+// ============================================
+function SettingsPage({ onToast }) {
+  const [business, setBusiness] = useState(null);
+  const [knowledge, setKnowledge] = useState([]);
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const [knowledgeForm, setKnowledgeForm] = useState({ question: '', answer: '', keywords: '' });
+
+  useEffect(() => { loadAll(); }, []);
+
+  const loadAll = async () => {
+    try {
+      setBusiness(await getBusiness());
+      setKnowledge(await getKnowledgeBase());
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSaveBusiness = async () => {
+    try {
+      await updateBusiness(business);
+      onToast('Business profile saved!', 'success');
+    } catch (e) { onToast('Error saving', 'error'); }
+  };
+
+  const handleAddKnowledge = async () => {
+    if (!knowledgeForm.question || !knowledgeForm.answer) { onToast('Question and answer are required', 'error'); return; }
+    try {
+      await createKnowledge({
+        question: knowledgeForm.question,
+        answer: knowledgeForm.answer,
+        keywords: knowledgeForm.keywords.split(',').map(k => k.trim()).filter(Boolean)
+      });
+      onToast('Knowledge added! AI can now answer this', 'success');
+      setShowKnowledge(false);
+      setKnowledgeForm({ question: '', answer: '', keywords: '' });
+      loadAll();
+    } catch (e) { onToast('Error adding knowledge', 'error'); }
+  };
+
+  const handleDeleteKnowledge = async (id) => {
+    if (!window.confirm('Delete this knowledge item?')) return;
+    try { await deleteKnowledge(id); onToast('Knowledge deleted', 'success'); loadAll(); }
+    catch (e) { onToast('Error deleting', 'error'); }
+  };
+
+  if (!business) return <div className="loading">Loading settings...</div>;
+
+  return (
+    <div className="page">
+      <div className="page-header"><h1><i className="fas fa-cog"></i> Settings</h1></div>
+
+      <div className="dashboard-grid">
+        {/* Business Profile */}
+        <div className="card">
+          <div className="card-header"><h3><i className="fas fa-store"></i> Business Profile</h3></div>
+          <div className="card-body">
+            <div className="form-group"><label>Business Name</label><input value={business.name || ''} onChange={e => setBusiness({ ...business, name: e.target.value })} /></div>
+            <div className="form-group"><label>Industry</label>
+              <select value={business.industry || ''} onChange={e => setBusiness({ ...business, industry: e.target.value })}>
+                <option value="wedding">Wedding & Events</option>
+                <option value="real_estate">Real Estate</option>
+                <option value="salon">Salon & Beauty</option>
+                <option value="clinic">Clinic</option>
+                <option value="agency">Agency</option>
+                <option value="ecommerce">E-commerce</option>
+              </select>
+            </div>
+            <div className="form-group"><label>WhatsApp Number</label><input value={business.whatsapp_number || ''} onChange={e => setBusiness({ ...business, whatsapp_number: e.target.value })} placeholder="+971..." /></div>
+            <div className="form-group"><label>Services (comma separated)</label>
+              <input value={(business.services || []).join(', ')} onChange={e => setBusiness({ ...business, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} />
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>Starting Price (AED)</label><input type="number" value={business.starting_price || ''} onChange={e => setBusiness({ ...business, starting_price: parseFloat(e.target.value) || null })} /></div>
+              <div className="form-group"><label>Working Hours</label><input value={business.working_hours || ''} onChange={e => setBusiness({ ...business, working_hours: e.target.value })} /></div>
+            </div>
+            <div className="form-group"><label>Location</label><input value={business.location || ''} onChange={e => setBusiness({ ...business, location: e.target.value })} /></div>
+            <div className="form-actions">
+              <button className="btn btn-primary" onClick={handleSaveBusiness}><i className="fas fa-save"></i> Save Business</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Knowledge Base */}
+        <div className="card">
+          <div className="card-header">
+            <h3><i className="fas fa-brain"></i> AI Knowledge Base</h3>
+            <button className="btn btn-sm btn-primary" onClick={() => setShowKnowledge(!showKnowledge)}><i className="fas fa-plus"></i> Add</button>
+          </div>
+          <div className="card-body">
+            {showKnowledge && (
+              <div style={{ marginBottom: 12 }}>
+                <div className="form-group"><label>Question</label><input value={knowledgeForm.question} onChange={e => setKnowledgeForm({ ...knowledgeForm, question: e.target.value })} placeholder="e.g. What is your pricing?" /></div>
+                <div className="form-group"><label>AI Answer</label><textarea value={knowledgeForm.answer} onChange={e => setKnowledgeForm({ ...knowledgeForm, answer: e.target.value })} rows="2" placeholder="Your AI response..." /></div>
+                <div className="form-group"><label>Keywords (comma separated)</label><input value={knowledgeForm.keywords} onChange={e => setKnowledgeForm({ ...knowledgeForm, keywords: e.target.value })} placeholder="price, cost, packages" /></div>
+                <div className="form-actions">
+                  <button className="btn btn-secondary" onClick={() => setShowKnowledge(false)}>Cancel</button>
+                  <button className="btn btn-primary" onClick={handleAddKnowledge}><i className="fas fa-plus"></i> Add</button>
+                </div>
+              </div>
+            )}
+            {knowledge.length === 0 ? <p className="text-muted"><i className="fas fa-brain"></i> No knowledge items. Add common questions so AI can answer them.</p> :
+              knowledge.map(k => (
+                <div key={k.id} style={{ background: 'var(--bg)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>Q: {k.question}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>A: {k.answer}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-light)' }}>Keywords: {(k.keywords || []).join(', ')}</span>
+                    <button className="action-btn delete" onClick={() => handleDeleteKnowledge(k.id)}><i className="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Helper
 // ============================================
 function timeAgo(dateStr) {
@@ -1514,6 +1755,8 @@ function App() {
       case 'payments': return <Payments {...props} />;
       case 'staff': return <StaffPage {...props} />;
       case 'editing': return <Editing {...props} />;
+      case 'automations': return <AutomationsPage {...props} />;
+      case 'settings': return <SettingsPage {...props} />;
       case 'portal': return <Portal />;
       default: return <Dashboard />;
     }
