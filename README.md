@@ -1,73 +1,47 @@
-# Team Shadow Weddings CRM
+# Team Shadow Weddings CRM - LeadFlow AI Edition
 
-A complete **Unified Order Management System** for Team Shadow Weddings - a wedding photography, videography, and event production company. Manage the full customer journey from lead capture to final delivery in one dashboard.
+**Turn WhatsApp conversations into customers - automatically.**
 
-## ✨ Features
-
-### 📨 Multi-Channel Lead Management
-- Capture inquiries from **Instagram, WhatsApp, Website, Facebook, Google, and Referral**
-- Unified inbox for all channels
-- Quick lead creation with customer auto-registration
-
-### 📄 Quotation Module
-- Create quotes with **discount and GST auto-calculation**
-- Package selection and custom pricing
-- Send quotations to clients with one click
-
-### 📅 Booking & Order Tracking
-- Full lifecycle tracking: Booked → Advance Received → Event Scheduled → Event Completed → Editing → Album Designing → Client Approval → Printing → Delivered → Closed
-- Advance payment tracking with auto balance calculation
-
-### 💰 Payment Module
-- Record payments (Cash, Bank Transfer, UPI, Card)
-- Auto-update booking payment status (pending/partial/paid)
-- Payment history per booking
-
-### 👥 Staff Management
-- Add photographers, videographers, editors, album designers, freelancers
-- Track availability and daily rates
-- Assign staff to editing projects
-
-### 🎬 Editing Workflow
-- Assign editors and designers to projects
-- Track progress: Raw Received → Editing Started → Review → Client Review → Approved → Delivered
-
-### 🏠 Customer Portal
-- Visual project status tracking for clients
-- See payment breakdown (Total vs Paid)
-- Track wedding project progress
+A complete wedding business management system that captures WhatsApp/Instagram/Facebook ads leads, responds with AI, organizes leads in one inbox, and automatically follows up with potential customers.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- npm
+- Docker & Docker Compose installed
+- Node.js 18+ (for local frontend dev)
+- Python 3.11+ (for local backend dev)
 
-### 1. Start the Backend
+### Run with Docker (Recommended)
 ```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install "fastapi>=0.110.0" "uvicorn>=0.24.0" "sqlalchemy>=2.0.30" "python-jose[cryptography]" "pydantic>=2.0.0" "python-multipart"
-python3 run.py
+# Clone the repo
+git clone https://github.com/saniyathahseen/teamshadow-crm.git
+cd teamshadow-crm
+
+# Start all services
+docker compose up -d --build
+
+# Access the app
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+# API Docs:  http://localhost:8000/docs
 ```
-The backend will start at `http://localhost:8000`
 
-### 2. Start the Frontend
+### Run locally (Development)
 ```bash
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# Frontend (in another terminal)
 cd frontend
 npm install
 npm start
 ```
-The frontend will start at `http://localhost:3000`
 
-### 3. Initialize Database (Optional)
-```bash
-python3 init_db.py
-```
-
-## 🔑 Default Login Credentials
+## 👤 Default Login
 | Role | Username | Password |
 |------|----------|----------|
 | Admin | `admin` | `admin123` |
@@ -76,126 +50,218 @@ python3 init_db.py
 | Editor | `emma` | `staff123` |
 | Videographer | `alex` | `staff123` |
 
+## 📱 What This System Does
+
+### 1. Meta Ads → WhatsApp Lead Automation
+```
+User sees Facebook/Instagram ad
+    ↓
+Clicks "Send WhatsApp Message"
+    ↓
+Messages your WhatsApp Business
+    ↓
+Webhook captures the message automatically
+    ↓
+AI bot responds with welcome message
+    ↓
+AI collects: Name → Date → Location → Services → Budget
+    ↓
+Lead stored in CRM as "new_lead"
+    ↓
+Sales team notified
+```
+
+### 2. AI Assistant
+- **Automated welcome**: Instantly responds to every WhatsApp enquiry
+- **Lead qualification**: Collects name, wedding date, location, services, budget step-by-step
+- **Smart answers**: Answers pricing, services, location, and hours questions from your knowledge base
+- **Human handoff**: Detects when customer wants to talk to a person and creates a task for your team
+
+### 3. WhatsApp Inbox
+- All leads in one dashboard
+- View full conversation history
+- Chat bubbles (user=green, bot=gray)
+- Send replies directly (human takeover)
+- Quick status buttons: Qualify, Contacted, Won, Lost
+- Export lead as CSV
+
+### 4. Smart Follow-ups
+- Automated reminders for customers who don't respond
+- Configurable: "Follow-up after 24 hours", "Follow-up after 72 hours"
+- Custom message templates
+- ON/OFF toggle for each automation rule
+
+### 5. Lead Management
+- Track leads through: **New → Qualified → Contacted → Won → Lost**
+- Dashboard shows: Total Leads, New Leads, Follow-ups Pending, Won, Conversion Rate
+- Filter by status
+- Search by name, phone, or location
+
+## 🗂️ Dashboard Screens
+
+| Screen | What it does |
+|--------|-------------|
+| **Dashboard** | Overview: Total Leads, New Leads, Follow-ups Pending, Won, Conversion Rate |
+| **WhatsApp Inbox** | Lead conversations, human takeover, export |
+| **Inquiries** | Full CRM inquiry management (create/edit/update status/delete) |
+| **Customers** | Customer database (view/edit/delete) |
+| **Quotations** | Create/send quotations to clients |
+| **Bookings** | Confirmed wedding bookings, payments |
+| **Payments** | Record payments against bookings |
+| **Editing** | Post-wedding editing project tracking |
+| **Tasks** | Assign tasks to team members |
+| **Automations** | Follow-up automation rules |
+| **Settings** | Business profile + AI knowledge base |
+
+## 🔌 API Endpoints
+
+### Webhooks (Public)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/webhooks/whatsapp` | Meta webhook verification |
+| POST | `/api/webhooks/whatsapp` | Receive WhatsApp messages |
+| POST | `/api/webhooks/instagram` | Instagram DM leads |
+| POST | `/api/webhooks/facebook` | Facebook Messenger leads |
+| POST | `/api/webhooks/test` | Simulate a lead (testing) |
+
+### Leads
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/leads` | List leads (filter by status/search) |
+| GET | `/api/lead/{id}` | Get lead with conversation history |
+| PATCH | `/api/lead/{id}` | Update lead status/details |
+| POST | `/api/send-message` | Send message to lead (human takeover) |
+| GET | `/api/lead/{id}/export` | Export lead as CSV |
+
+### Business & Automations
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/PUT | `/api/business` | Get/update business profile |
+| GET/POST | `/api/knowledge-base` | AI knowledge items |
+| GET/POST | `/api/automations` | Follow-up automation rules |
+| PATCH | `/api/automations/{id}` | Toggle automation ON/OFF |
+| POST | `/api/automations/run-follow-ups` | Run follow-up check now |
+
+### CRM
+| Resource | Endpoints |
+|----------|-----------|
+| Customers | GET/POST `/api/customers`, GET/PUT/DELETE `/api/customers/{id}` |
+| Inquiries | GET/POST `/api/inquiries`, PUT/DELETE `/api/inquiries/{id}` |
+| Quotations | GET/POST `/api/quotations`, PUT/DELETE `/api/quotations/{id}` |
+| Bookings | GET/POST `/api/bookings`, PUT/DELETE `/api/bookings/{id}` |
+| Payments | GET/POST `/api/payments`, PUT/DELETE `/api/payments/{id}` |
+| Staff | GET/POST `/api/staff`, PUT/DELETE `/api/staff/{id}` |
+| Tasks | GET/POST `/api/tasks`, PUT/DELETE `/api/tasks/{id}` |
+| Users | GET/POST `/api/users` |
+
+## 📊 Database Models
+
+| Model | Purpose |
+|-------|---------|
+| `User` | System users (admin/staff) with login credentials |
+| `Business` | Business profile (services, pricing, location, hours) |
+| `Customer` | Client information |
+| `Inquiry` | Initial enquiries from all channels |
+| `Lead` | WhatsApp leads with qualification status |
+| `Conversation` | WhatsApp conversation history |
+| `Quotation` | Price quotes sent to clients |
+| `Booking` | Confirmed events |
+| `Payment` | Payment records |
+| `Staff` | Team members |
+| `EditingProject` | Post-event editing tracking |
+| `Deliverable` | Final deliverables |
+| `Task` | Team task management |
+| `Automation` | Follow-up rules (trigger/action/delay) |
+| `KnowledgeBase` | AI answers for common questions |
+| `ActivityLog` | Audit trail |
+
 ## 📁 Project Structure
 ```
 teamshadow-crm/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI application
-│   │   ├── database.py           # SQLite database setup
-│   │   ├── models.py             # Database models
-│   │   ├── schemas.py            # Pydantic schemas
-│   │   ├── auth.py               # JWT authentication
-│   │   └── routes/               # API route modules
-│   │       ├── auth_routes.py
-│   │       ├── dashboard_routes.py
-│   │       ├── customer_routes.py
-│   │       ├── inquiry_routes.py
-│   │       ├── quotation_routes.py
-│   │       ├── booking_routes.py
-│   │       ├── payment_routes.py
-│   │       ├── staff_routes.py
-│   │       ├── editing_routes.py
-│   │       └── extra_routes.py
-│   ├── run.py                    # Backend entry point
-│   └── requirements.txt
+│   │   ├── main.py          # FastAPI app
+│   │   ├── models.py        # SQLAlchemy models
+│   │   ├── auth.py          # JWT authentication
+│   │   ├── database.py      # Database setup
+│   │   ├── routes/          # API endpoints
+│   │   │   ├── webhook_routes.py     # WhatsApp lead capture
+│   │   │   ├── business_routes.py    # Profile + automations
+│   │   │   ├── dashboard_routes.py   # Stats overview
+│   │   │   └── ... (all CRM routes)
+│   │   └── services/
+│   │       └── automation_service.py  # Follow-ups + AI knowledge
+│   ├── requirements.txt
+│   └── run.py
 ├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   └── src/
-│       ├── index.js
-│       ├── App.js                # React application
-│       ├── App.css               # Styles
-│       └── api.js                # API service layer
-├── init_db.py                    # Database initialization
-└── start.sh                      # Quick start script
+│   ├── src/
+│   │   ├── App.js           # All UI screens
+│   │   ├── App.css          # Styles
+│   │   └── api.js           # API client
+│   └── package.json
+├── docker-compose.yml       # Backend + frontend orchestration
+├── META_ADS_INTEGRATION.md  # Meta ads → WhatsApp guide
+├── WHATSAPP_SETUP.md        # How to get WhatsApp credentials
+└── WORKFLOW.md              # Business workflow
 ```
 
-## 📡 API Endpoints
+## 💰 How to Set Up WhatsApp (Meta) Integration
 
-### Authentication
-- `POST /api/auth/login` - Login and get JWT token
-- `GET /api/auth/me` - Get current user info
+See [WHATSAPP_SETUP.md](WHATSAPP_SETUP.md) for a complete step-by-step guide to get:
+- `WHATSAPP_VERIFY_TOKEN`
+- `WHATSAPP_API_TOKEN`
+- `WHATSAPP_PHONE_ID`
 
-### Customers
-- `GET /api/customers` - List all customers
-- `POST /api/customers` - Create customer
-- `GET /api/customers/{id}` - Get customer details
-- `PUT /api/customers/{id}` - Update customer
-- `DELETE /api/customers/{id}` - Delete customer
+## 🔧 Configuration
 
-### Inquiries
-- `GET /api/inquiries` - List inquiries (filter by status/source)
-- `POST /api/inquiries` - Create inquiry
-- `PUT /api/inquiries/{id}` - Update inquiry
-- `DELETE /api/inquiries/{id}` - Delete inquiry
+Set these environment variables:
+```bash
+# Meta WhatsApp API credentials
+WHATSAPP_VERIFY_TOKEN=your-verify-token
+WHATSAPP_API_TOKEN=your-api-token
+WHATSAPP_PHONE_ID=your-phone-id
 
-### Quotations
-- `GET /api/quotations` - List quotations
-- `POST /api/quotations` - Create quotation
-- `PUT /api/quotations/{id}` - Update quotation
-- `DELETE /api/quotations/{id}` - Delete quotation
-- `PUT /api/quotations/{id}/send` - Send quotation
+# Frontend API URL (default: /api which proxies to backend)
+REACT_APP_API_URL=/api
+```
 
-### Bookings
-- `GET /api/bookings` - List bookings
-- `POST /api/bookings` - Create booking
-- `PUT /api/bookings/{id}` - Update booking
-- `DELETE /api/bookings/{id}` - Delete booking
-- `PUT /api/bookings/{id}/status` - Update booking status
+## 🧪 Testing the System
 
-### Payments
-- `GET /api/payments` - List payments
-- `POST /api/payments` - Record payment
-- `PUT /api/payments/{id}` - Update payment
-- `DELETE /api/payments/{id}` - Delete payment
+### Test WhatsApp lead flow
+```bash
+# 1. Simulate a lead from a Facebook ad
+curl -X POST http://localhost:8000/api/webhooks/test \
+  -H "Content-Type: application/json" \
+  -d '{"from":"97150123456","message":"Hi! I want wedding photography","source":"facebook"}'
 
-### Staff
-- `GET /api/staff` - List staff
-- `POST /api/staff` - Add staff
-- `PUT /api/staff/{id}` - Update staff
-- `DELETE /api/staff/{id}` - Delete staff
+# 2. Respond as the customer (AI collects info)
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"Ahmed & Sara"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"December 2026"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"Dubai"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"1,2,5"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"5 lakh"}'
 
-### Editing Projects
-- `GET /api/editing-projects` - List editing projects
-- `POST /api/editing-projects` - Create project
-- `PUT /api/editing-projects/{id}` - Update project
-- `DELETE /api/editing-projects/{id}` - Delete project
-- `PUT /api/editing-projects/{id}/status` - Update project status
+# 3. View captured leads
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
 
-### Admin
-- `GET /api/users` - List users (admin only)
-- `POST /api/users` - Create user (admin only)
+curl -s http://localhost:8000/api/leads -H "Authorization: Bearer $TOKEN"
 
-### Other
-- `GET /api/activity` - Activity log
-- `GET /api/deliverables` - List deliverables
-- `POST /api/deliverables` - Create deliverable
-- `GET /api/expenses` - List expenses
-- `POST /api/expenses` - Create expense
+# 4. Export a lead as CSV
+curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN"
+```
+
+## 📚 More Documentation
+- **[META_ADS_INTEGRATION.md](META_ADS_INTEGRATION.md)** - Complete Meta Ads → WhatsApp automation guide
+- **[WHATSAPP_SETUP.md](WHATSAPP_SETUP.md)** - How to get WhatsApp API credentials
+- **[WORKFLOW.md](WORKFLOW.md)** - Business workflow documentation
+- **[SECURITY.md](SECURITY.md)** - Security & deployment guide
+- **[INTEGRATION.md](INTEGRATION.md)** - Integration guide
 
 ## 🛠️ Tech Stack
-- **Backend:** Python, FastAPI, SQLAlchemy, JWT
-- **Frontend:** React, JavaScript, CSS
-- **Database:** SQLite (zero-config, file-based)
-- **Authentication:** JWT with role-based access
-
-## 📋 Business Workflow Covered
-```
-Customer Inquiry (Instagram/WhatsApp/Website/Facebook)
-    ↓
-Sales Team Reviews & Contacts
-    ↓
-Quotation Created & Sent
-    ↓
-Negotiation
-    ↓
-Booking Confirmed + Advance Payment
-    ↓
-Event Scheduled → Event Completed
-    ↓
-Editing & Album Design
-    ↓
-Client Approval
-    ↓
-Printing → Delivery → Closed
+- **Backend**: Python, FastAPI, SQLAlchemy, SQLite, JWT
+- **Frontend**: React 18, Axios
+- **Deployment**: Docker, Docker Compose, Nginx
+- **AI**: Rule-based intent detection + knowledge base (no external API needed)
+- **WhatsApp**: Meta WhatsApp Cloud API

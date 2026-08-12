@@ -24,6 +24,10 @@ Collects: Name → Date → Location → Services → Budget
 Lead stored in CRM with status "new_lead"
     ↓
 Sales team notified (task created)
+    ↓
+Smart follow-up if no response (24h/72h)
+    ↓
+Human takeover → Quotation → Booking
 ```
 
 ## API Endpoints
@@ -45,6 +49,15 @@ Sales team notified (task created)
 | PATCH | `/api/lead/{id}` | Update lead status/assignment |
 | POST | `/api/send-message` | Send message to lead (human takeover) |
 | GET | `/api/lead/{id}/export` | Export lead as CSV |
+
+### Business & Automations
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/PUT | `/api/business` | Get/update business profile |
+| GET/POST | `/api/knowledge-base` | AI knowledge items |
+| GET/POST | `/api/automations` | Follow-up automation rules |
+| PATCH | `/api/automations/{id}` | Toggle automation ON/OFF |
+| POST | `/api/automations/run-follow-ups` | Run follow-up check |
 
 ## AI Conversation Flow
 
@@ -100,6 +113,37 @@ Bot: "Perfect! Here's your summary:
 - **Phone extraction**: Parses phone numbers from messages
 - **Event type detection**: Detects wedding, engagement, reception, etc.
 
+### Knowledge Base Answers
+Business owners configure Q&A pairs in the Settings page:
+```
+Q: "How much is wedding photography?"
+A: "Our packages start from AED 5,000..."
+Keywords: price, cost, photography, packages
+```
+
+## Smart Follow-ups
+
+Automated follow-up rules fire when customers don't respond:
+
+| Rule | Trigger | Delay | Message |
+|------|---------|-------|---------|
+| 24h Follow-up | NO_CUSTOMER_REPLY | 24 hours | "Hi! Just checking if you'd still like our packages..." |
+| 72h Follow-up | NO_CUSTOMER_REPLY | 72 hours | "We have some great offers this week..." |
+
+## Lead Management
+
+Track leads through the pipeline:
+```
+New Lead → Qualified → Contacted → Won → Lost
+```
+
+Dashboard displays:
+- Total Leads
+- New Leads
+- Follow-ups Pending
+- Won
+- Conversion Rate
+
 ## Configuration
 
 Set these environment variables in your deployment:
@@ -148,6 +192,35 @@ curl -s http://localhost:8000/api/lead/1 -H "Authorization: Bearer $TOKEN"
 curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN"
 ```
 
+### 4. Update lead status
+```bash
+curl -s -X PATCH http://localhost:8000/api/lead/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"qualified"}'
+```
+
+### 5. Send message (human takeover)
+```bash
+curl -s -X POST http://localhost:8000/api/send-message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"lead_id":1,"message":"Hi! Thanks for your enquiry. Here are our packages..."}'
+```
+
+### 6. Test follow-up automation
+```bash
+# Create a follow-up rule
+curl -s -X POST http://localhost:8000/api/automations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"24h Follow-up","trigger":"NO_CUSTOMER_REPLY","action":"SEND_FOLLOWUP","delay_hours":24,"message_template":"Hi! Just checking if you would still like our packages."}'
+
+# Run follow-up check
+curl -s -X POST http://localhost:8000/api/automations/run-follow-ups \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ## Meta Webhook Setup
 
 1. **Create WhatsApp Business Account** at https://business.whatsapp.com
@@ -155,6 +228,8 @@ curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN
 3. **Configure webhook URL**: `https://your-domain.com/api/webhooks/whatsapp`
 4. **Verify token**: Use the same value as `WHATSAPP_VERIFY_TOKEN`
 5. **Subscribe to messages** webhook events
+
+See [WHATSAPP_SETUP.md](WHATSAPP_SETUP.md) for detailed credential setup.
 
 ## Database Schema
 
@@ -171,7 +246,7 @@ curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN
 | lead_source | String | facebook/instagram/whatsapp |
 | conversation_state | String | Current bot state |
 | assigned_to | Integer | Sales team member |
-| status | String | new_lead/qualified/contacted |
+| status | String | new_lead/qualified/contacted/won/lost |
 | created_at | DateTime | Lead created |
 | updated_at | DateTime | Last update |
 
@@ -183,3 +258,24 @@ curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN
 | sender | String | user/bot/agent |
 | message | Text | Message content |
 | timestamp | DateTime | When sent |
+
+### Automation Table
+| Column | Type | Description |
+|--------|------|-------------|
+| id | Integer | Primary key |
+| business_id | Integer | FK to businesses |
+| name | String | Rule name |
+| trigger | String | LEAD_CREATED / NO_CUSTOMER_REPLY / STATUS_CHANGED |
+| action | String | SEND_FOLLOWUP / SEND_AI_REPLY / NOTIFY_TEAM |
+| delay_hours | Integer | Delay before firing |
+| message_template | Text | Follow-up message |
+| active | Boolean | ON/OFF toggle |
+
+### KnowledgeBase Table
+| Column | Type | Description |
+|--------|------|-------------|
+| id | Integer | Primary key |
+| business_id | Integer | FK to businesses |
+| question | String | Common question |
+| answer | Text | AI response |
+| keywords | JSON | Related keywords for matching |
