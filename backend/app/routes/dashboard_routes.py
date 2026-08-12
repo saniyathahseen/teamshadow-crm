@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from app.database import get_db
-from app.models import User, Inquiry, Quotation, Booking, Payment, Staff, ActivityLog
+from app.models import User, Inquiry, Quotation, Booking, Payment, Staff, ActivityLog, Lead
 from app.auth import verify_token
 
 router = APIRouter(prefix="/api", tags=["Dashboard"])
@@ -60,6 +60,17 @@ def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(
             "inquiry_count": count
         })
 
+    # LeadFlow AI stats
+    total_leads = db.query(Lead).count()
+    new_leads = db.query(Lead).filter(Lead.status == "new_lead").count()
+    qualified_leads = db.query(Lead).filter(Lead.status == "qualified").count()
+    won_leads = db.query(Lead).filter(Lead.status == "booked").count()
+    lost_leads = db.query(Lead).filter(Lead.status == "lost").count()
+    follow_ups = db.query(Lead).filter(
+        Lead.status.in_(["new_lead", "qualified", "contacted"])
+    ).count()
+    conversion_rate = round((won_leads / total_leads * 100), 1) if total_leads > 0 else 0
+
     return {
         "total_inquiries": total_inquiries,
         "active_leads": active_leads,
@@ -67,6 +78,13 @@ def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(
         "confirmed_bookings": confirmed_bookings,
         "total_revenue": total_revenue,
         "pending_payments": pending_payments,
+        "total_leads": total_leads,
+        "new_leads": new_leads,
+        "qualified_leads": qualified_leads,
+        "won_leads": won_leads,
+        "lost_leads": lost_leads,
+        "follow_ups_pending": follow_ups,
+        "conversion_rate": conversion_rate,
         "channels": channels,
         "recent_activity": [
             {"id": a.id, "action": a.action, "entity_type": a.entity_type,

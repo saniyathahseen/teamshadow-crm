@@ -146,12 +146,12 @@ function Dashboard() {
   if (!data) return <div className="loading">Failed to load dashboard</div>;
 
   const stats = [
-    { icon: 'fa-inbox', color: '#6366f1', bg: '#eef2ff', value: data.total_inquiries, label: 'Total Inquiries' },
-    { icon: 'fa-clock', color: '#f59e0b', bg: '#fef3c7', value: data.active_leads, label: 'Active Leads' },
-    { icon: 'fa-file-invoice', color: '#3b82f6', bg: '#dbeafe', value: data.total_quotations, label: 'Quotations' },
-    { icon: 'fa-check-circle', color: '#10b981', bg: '#d1fae5', value: data.confirmed_bookings, label: 'Confirmed' },
-    { icon: 'fa-rupee-sign', color: '#8b5cf6', bg: '#ede9fe', value: `₹${(data.total_revenue || 0).toLocaleString()}`, label: 'Revenue' },
-    { icon: 'fa-exclamation-triangle', color: '#ef4444', bg: '#fee2e2', value: data.pending_payments, label: 'Pending Payments' },
+    { icon: 'fa-users', color: '#6366f1', bg: '#eef2ff', value: data.total_leads || 0, label: 'Total Leads' },
+    { icon: 'fa-star', color: '#f59e0b', bg: '#fef3c7', value: data.new_leads || 0, label: 'New Leads' },
+    { icon: 'fa-bell', color: '#3b82f6', bg: '#dbeafe', value: data.follow_ups_pending || 0, label: 'Follow-ups Pending' },
+    { icon: 'fa-trophy', color: '#10b981', bg: '#d1fae5', value: data.won_leads || 0, label: 'Won' },
+    { icon: 'fa-percent', color: '#8b5cf6', bg: '#ede9fe', value: `${data.conversion_rate || 0}%`, label: 'Conversion Rate' },
+    { icon: 'fa-inbox', color: '#ef4444', bg: '#fee2e2', value: data.total_inquiries || 0, label: 'Total Inquiries' },
   ];
 
   const channelColors = { instagram: '#e1306c', whatsapp: '#25d366', website: '#2196f3', facebook: '#1877f2', google: '#f59e0b', referral: '#7b1fa2' };
@@ -238,6 +238,7 @@ function Inquiries({ onToast }) {
   const [status, setStatus] = useState('all');
   const [source, setSource] = useState('all');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState({ customer_id: '', source: 'instagram', event_type: '', budget_estimate: '', notes: '', name: '', phone: '' });
 
@@ -252,25 +253,37 @@ function Inquiries({ onToast }) {
 
   const handleCreate = async () => {
     try {
-      let customerId = form.customer_id;
-      if (!customerId) {
-        if (!form.name || !form.phone) { onToast('Please enter customer name and phone', 'error'); return; }
-        const c = await createCustomer({ name: form.name, phone: form.phone });
-        customerId = c.id;
+      if (editingId) {
+        await updateInquiry(editingId, {
+          source: form.source,
+          event_type: form.event_type,
+          budget_estimate: parseFloat(form.budget_estimate) || null,
+          notes: form.notes
+        });
+        onToast('Inquiry updated successfully!', 'success');
+        setEditingId(null);
+      } else {
+        let customerId = form.customer_id;
+        if (!customerId) {
+          if (!form.name || !form.phone) { onToast('Please enter customer name and phone', 'error'); return; }
+          const c = await createCustomer({ name: form.name, phone: form.phone });
+          customerId = c.id;
+        }
+        await createInquiry({
+          customer_id: parseInt(customerId), source: form.source,
+          event_type: form.event_type, budget_estimate: parseFloat(form.budget_estimate) || null,
+          notes: form.notes
+        });
+        onToast('Inquiry created successfully!', 'success');
       }
-      await createInquiry({
-        customer_id: parseInt(customerId), source: form.source,
-        event_type: form.event_type, budget_estimate: parseFloat(form.budget_estimate) || null,
-        notes: form.notes
-      });
-      onToast('Inquiry created successfully!', 'success');
       setShowForm(false);
       setForm({ customer_id: '', source: 'instagram', event_type: '', budget_estimate: '', notes: '', name: '', phone: '' });
       loadData();
-    } catch (e) { onToast(e.response?.data?.detail || 'Error creating inquiry', 'error'); }
+    } catch (e) { onToast(e.response?.data?.detail || 'Error saving inquiry', 'error'); }
   };
 
   const handleEdit = (inq) => {
+    setEditingId(inq.id);
     setForm({
       customer_id: inq.customer?.id || '', source: inq.source, event_type: inq.event_type || '',
       budget_estimate: inq.budget_estimate || '', notes: inq.notes || '', name: '', phone: ''
@@ -539,6 +552,7 @@ function Customers({ onToast }) {
 function Quotations({ onToast }) {
   const [data, setData] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState({ customer_id: '', package_name: '', base_amount: '', discount: '0', gst: '0', notes: '', valid_until: '' });
 
@@ -550,16 +564,36 @@ function Quotations({ onToast }) {
   const handleCreate = async () => {
     if (!form.customer_id) { onToast('Please select a client', 'error'); return; }
     try {
-      const res = await createQuotation({
-        customer_id: parseInt(form.customer_id), package_name: form.package_name,
-        base_amount: parseFloat(form.base_amount) || 0, discount: parseFloat(form.discount) || 0,
-        gst: parseFloat(form.gst) || 0, notes: form.notes, valid_until: form.valid_until || undefined
-      });
-      onToast(`Quotation ${res.quote_number} created! Amount: ₹${res.total_amount.toLocaleString()}`, 'success');
+      if (editingId) {
+        await updateQuotation(editingId, {
+          package_name: form.package_name,
+          base_amount: parseFloat(form.base_amount) || 0, discount: parseFloat(form.discount) || 0,
+          gst: parseFloat(form.gst) || 0, notes: form.notes, valid_until: form.valid_until || undefined
+        });
+        onToast('Quotation updated successfully!', 'success');
+        setEditingId(null);
+      } else {
+        const res = await createQuotation({
+          customer_id: parseInt(form.customer_id), package_name: form.package_name,
+          base_amount: parseFloat(form.base_amount) || 0, discount: parseFloat(form.discount) || 0,
+          gst: parseFloat(form.gst) || 0, notes: form.notes, valid_until: form.valid_until || undefined
+        });
+        onToast(`Quotation ${res.quote_number} created! Amount: ₹${res.total_amount.toLocaleString()}`, 'success');
+      }
       setShowForm(false);
       setForm({ customer_id: '', package_name: '', base_amount: '', discount: '0', gst: '0', notes: '', valid_until: '' });
       loadData();
-    } catch (e) { onToast('Error creating quotation', 'error'); }
+    } catch (e) { onToast('Error saving quotation', 'error'); }
+  };
+
+  const handleEdit = (q) => {
+    setEditingId(q.id);
+    setForm({
+      customer_id: q.customer?.id || '', package_name: q.package_name || '',
+      base_amount: q.base_amount || '', discount: q.discount || '0',
+      gst: q.gst || '0', notes: q.notes || '', valid_until: q.valid_until || ''
+    });
+    setShowForm(true);
   };
 
   const handleSend = async (id) => {
@@ -575,7 +609,7 @@ function Quotations({ onToast }) {
 
       {showForm && (
         <div className="form-card">
-          <h3><i className="fas fa-file-invoice"></i> New Quotation</h3>
+          <h3><i className="fas fa-file-invoice"></i> {editingId ? 'Edit Quotation' : 'New Quotation'}</h3>
           <div className="form-group">
             <label>Client *</label>
             <select value={form.customer_id} onChange={e => setForm({ ...form, customer_id: e.target.value })}>
@@ -620,7 +654,7 @@ function Quotations({ onToast }) {
                         <i className="fas fa-paper-plane"></i>
                       </button>
                     )}
-                    <button className="action-btn edit" onClick={() => window.prompt('Edit #' + q.quote_number + ' (edit in API docs)')} title="Edit"><i className="fas fa-edit"></i></button>
+                    <button className="action-btn edit" onClick={() => handleEdit(q)} title="Edit"><i className="fas fa-edit"></i></button>
                     <button className="action-btn delete" onClick={async () => { if (window.confirm('Delete this quotation?')) { try { await deleteQuotation(q.id); onToast('Quotation deleted', 'success'); loadData(); } catch (e) { onToast('Error deleting', 'error'); } } }} title="Delete"><i className="fas fa-trash"></i></button>
                   </td>
                 </tr>
@@ -1345,6 +1379,22 @@ function LeadsPage({ onToast, currentUser }) {
             className="filter-select"
             style={{ width: 250 }}
           />
+          {selectedLead && (
+            <button className="btn btn-secondary" onClick={async () => {
+              try {
+                const res = await exportLead(selectedLead.id);
+                const blob = new Blob([res.csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lead-${selectedLead.id}-${selectedLead.customer_name || 'export'}.csv`;
+                a.click();
+                onToast('Lead exported!', 'success');
+              } catch (e) { onToast('Error exporting lead', 'error'); }
+            }}>
+              <i className="fas fa-download"></i> Export
+            </button>
+          )}
         </div>
       </div>
 
