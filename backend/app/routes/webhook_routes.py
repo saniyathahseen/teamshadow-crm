@@ -553,13 +553,6 @@ def get_lead(lead_id: int, user: User = Depends(get_current_user), db: Session =
 @router.patch("/lead/{lead_id}")
 def update_lead(lead_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Update lead status, assignment, or details."""
-    payload = verify_token(user.credentials)
-    if payload is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    current_user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
-    if not current_user:
-        raise HTTPException(status_code=401, detail="User not found")
-
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
@@ -577,13 +570,6 @@ def update_lead(lead_id: int, data: dict, user: User = Depends(get_current_user)
 @router.post("/send-message")
 def send_message(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Send a message to a lead (human agent takeover)."""
-    payload = verify_token(user.credentials)
-    if payload is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    current_user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
-    if not current_user:
-        raise HTTPException(status_code=401, detail="User not found")
-
     lead_id = data.get("lead_id")
     message = data.get("message", "")
 
