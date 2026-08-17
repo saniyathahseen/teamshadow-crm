@@ -265,3 +265,9 @@ curl -s http://localhost:8000/api/lead/1/export -H "Authorization: Bearer $TOKEN
 - **Deployment**: Docker, Docker Compose, Nginx
 - **AI**: Rule-based intent detection + knowledge base (no external API needed)
 - **WhatsApp**: Meta WhatsApp Cloud API
+
+
+<!-- for deploy
+git clone https://github.com/saniyathahseen/teamshadow-crm.git
+cd teamshadow-crm
+docker compose up -d --build -->
