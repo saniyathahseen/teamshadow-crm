@@ -205,6 +205,37 @@ teamshadow-crm/
 └── WORKFLOW.md              # Business workflow
 ```
 
+## 🚀 Deployment
+
+### GitHub Pages (Free - Frontend)
+The site is **automatically deployed** to GitHub Pages using GitHub Actions on every push to `main`.
+
+**Live URL:** `https://saniyathahseen.github.io/teamshadow-crm/`
+
+The workflow (`.github/workflows/deploy.yml`):
+1. Installs frontend dependencies
+2. Builds the React app (`npm run build`)
+3. Uploads the `frontend/build` folder to GitHub Pages
+
+**To enable:** Go to repo → Settings → Pages → Source: "GitHub Actions"
+
+### Docker (Full Stack - Backend + Frontend)
+```bash
+# Deploy on any VPS/cloud server
+git clone https://github.com/saniyathahseen/teamshadow-crm.git
+cd teamshadow-crm
+docker compose up -d --build
+
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+### Render.com / Railway (Free Tier)
+1. Connect your GitHub repo
+2. Select "Docker" as the runtime
+3. Deploy the two services (backend on port 8000, frontend on port 3000)
+
 ## 💰 How to Set Up WhatsApp (Meta) Integration
 
 See [WHATSAPP_SETUP.md](WHATSAPP_SETUP.md) for a complete step-by-step guide to get:
