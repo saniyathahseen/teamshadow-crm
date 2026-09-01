@@ -1,4 +1,4 @@
-# 📱 WhatsApp & Instagram Inquiry Integration Guide
+# 📱 WhatsApp & Instagram Integration Guide
 
 This guide shows how to integrate WhatsApp and Instagram inquiries directly into the Team Shadow CRM.
 
@@ -21,7 +21,54 @@ https://wa.me/919876543210?text=Hi%20Team%20Shadow%20Weddings%2C%20I%27m%20inter
    - `@book` - "To book, please share your wedding date and venue"
 3. When clients DM, one tap sends the auto-response
 
-### Option 4: API Integration (For Developers)
+### Option 4: Meta Ads → WhatsApp Automation (Recommended ✅)
+The system has **full WhatsApp webhook automation** built in:
+
+```
+User sees Facebook/Instagram ad
+    ↓
+Clicks "Send WhatsApp Message"
+    ↓
+Messages your WhatsApp Business
+    ↓
+Webhook captures the message automatically
+    ↓
+AI bot responds with welcome message
+    ↓
+AI collects: Name → Date → Location → Services → Budget
+    ↓
+Lead stored in CRM as "new_lead"
+    ↓
+Smart follow-up if no response (24h/72h)
+    ↓
+Human takeover → Quotation → Booking
+```
+
+**Webhook endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/webhooks/whatsapp` | Meta webhook verification |
+| POST | `/api/webhooks/whatsapp` | Receive WhatsApp messages |
+| POST | `/api/webhooks/instagram` | Instagram DM leads |
+| POST | `/api/webhooks/facebook` | Facebook Messenger leads |
+| POST | `/api/webhooks/test` | Simulate a lead (testing) |
+
+**Test the flow:**
+```bash
+# Simulate a lead from a Facebook ad
+curl -X POST http://localhost:8000/api/webhooks/test \
+  -H "Content-Type: application/json" \
+  -d '{"from":"97150123456","message":"Hi! I want wedding photography","source":"facebook"}'
+
+# Respond as the customer (AI collects info)
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"Ahmed & Sara"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"December 2026"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"Dubai"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"1,2,5"}'
+curl -X POST http://localhost:8000/api/webhooks/test -d '{"from":"97150123456","message":"5 lakh"}'
+```
+
+### Option 5: API Integration (For Developers)
 The CRM has an **Open API endpoint** that can receive inquiries from any platform:
 
 ```
@@ -43,57 +90,21 @@ Authorization: Bearer <your_token>
 ## 🤖 Setting up WhatsApp Business API
 
 1. **Create WhatsApp Business Account** at https://business.whatsapp.com
-2. **Get API Access** using Twilio, Meta Cloud API, or WATI
-3. **Create a Webhook** that receives new messages and calls our API:
+2. **Get API credentials** from Meta Developer Portal:
+   - `WHATSAPP_VERIFY_TOKEN` - You create this yourself
+   - `WHATSAPP_API_TOKEN` - From Meta Developer Portal
+   - `WHATSAPP_PHONE_ID` - From Meta Developer Portal
+3. **Configure webhook URL**: `https://your-domain.com/api/webhooks/whatsapp`
+4. **Verify token**: Use the same value as `WHATSAPP_VERIFY_TOKEN`
+5. **Subscribe to messages** webhook events
 
-```python
-# webhook_example.py
-import requests
-
-def whatsapp_webhook(message_data):
-    """Forward WhatsApp messages to Team Shadow CRM"""
-    response = requests.post(
-        "http://localhost:8000/api/inquiries",
-        headers={"Authorization": "Bearer YOUR_TOKEN"},
-        json={
-            "source": "whatsapp",
-            "customer_name": message_data.get("customer_name", "WhatsApp Lead"),
-            "phone": message_data.get("phone"),
-            "message": message_data.get("text", "")
-        }
-    )
-    return response.json()
-```
+See [WHATSAPP_SETUP.md](WHATSAPP_SETUP.md) for detailed credential setup.
 
 ## 📸 Setting up Instagram API
 
 1. **Convert to Instagram Business Account**
 2. **Get API Access** via Meta Graph API
-3. **Create a Webhook** that forwards DMs:
-
-```python
-# instagram_webhook.py
-import requests
-
-def instagram_webhook(dm_data):
-    """Forward Instagram DMs to Team Shadow CRM"""
-    response = requests.post(
-        "http://localhost:8000/api/inquiries",
-        headers={"Authorization": "Bearer YOUR_TOKEN"},
-        json={
-            "source": "instagram",
-            "customer_name": dm_data.get("sender_name", "Instagram Lead"),
-            "message": dm_data.get("message", "")
-        }
-    )
-    return response.json()
-```
-
-## 📧 Email Integration (Simple)
-
-Set up a **Gmail filter** that forwards inquiries from your contact form to:
-- Your email: `inquiries@teamshadow.com`
-- The team quickly adds them via the CRM interface
+3. **Create a Webhook** that forwards DMs to `/api/webhooks/instagram`
 
 ## 🏷️ Channel Sources Available
 | Source | Status | How to Add |
@@ -112,5 +123,9 @@ The CRM already includes:
 - ✅ Activity logging
 - ✅ Channel-based reporting on the dashboard
 - ✅ Customer matching by phone number
+- ✅ AI lead qualification (collects name, date, location, services, budget)
+- ✅ Smart follow-ups (24h/72h reminders)
+- ✅ Human takeover from WhatsApp Inbox
+- ✅ Lead export as CSV
 
 No external services required to get started!
