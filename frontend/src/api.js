@@ -1,8 +1,12 @@
 import axios from 'axios';
 
-// Use relative path so it works with both local dev and Docker (nginx proxy)
-// For production, set REACT_APP_API_URL to your deployed backend URL
-const API_BASE = process.env.REACT_APP_API_URL || '/api';
+// Local Docker uses relative path (nginx proxies to backend)
+// GitHub Pages / production uses deployed Render backend
+const API_BASE =
+  process.env.REACT_APP_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? '/api'
+    : 'https://teamshadow-crm.onrender.com/api');
 
 const API = axios.create({
   baseURL: API_BASE,
