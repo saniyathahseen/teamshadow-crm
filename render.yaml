@@ -1,0 +1,23 @@
+# Render.com Deployment Configuration
+# Deploy the backend API to Render's free tier
+# Then set REACT_APP_API_URL to the deployed backend URL
+
+services:
+  - type: web
+    name: teamshadow-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./teamshadow.db
+      - key: SECRET_KEY
+        value: teamshadow-wedding-crm-secret-key-2024-very-secure
+      - key: WHATSAPP_VERIFY_TOKEN
+        value: teamshadow-webhook-verify-2024
+      - key: WHATSAPP_API_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_ID
+        sync: false
