@@ -2,13 +2,18 @@
 Authentication utilities - password hashing and JWT token management.
 """
 import hashlib
+import os
 import secrets
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 
-SECRET_KEY = "teamshadow-wedding-crm-secret-key-2024-very-secure"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 7
+SECRET_KEY = (
+    os.getenv("TEAMSHADOW_SECRET_KEY")
+    or os.getenv("SECRET_KEY")
+    or secrets.token_hex(32)
+)
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_DAYS", "7"))
 
 
 def hash_password(password: str) -> str:

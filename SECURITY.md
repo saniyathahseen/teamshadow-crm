@@ -37,32 +37,26 @@ Consider upgrading when:
 
 ## 🚀 Deployment Security Checklist
 
-### 1. Change Default Passwords (CRITICAL)
+### 1. Configure Strong Credentials Before First Login (CRITICAL)
 ```bash
-# Login as admin and change password immediately
-# Or update via API:
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+export TEAMSHADOW_ADMIN_USERNAME=admin
+export TEAMSHADOW_ADMIN_PASSWORD='a-long-random-password'
+export TEAMSHADOW_STAFF_PASSWORD='another-long-random-password'
 ```
 
+The app will create the configured admin and staff accounts on startup; do not rely on shipped demo credentials.
+
 ### 2. Set a Strong JWT Secret
-Edit `backend/app/auth.py`:
-```python
-# Change this to a long random string
-SECRET_KEY = "your-very-long-random-secret-key-here"
+```bash
+export TEAMSHADOW_SECRET_KEY='your-very-long-random-secret-key-here'
+# or
+export SECRET_KEY='your-very-long-random-secret-key-here'
 ```
 
 ### 3. Restrict CORS Origins
-Edit `backend/app/main.py`:
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://yourdomain.com"],  # Only your domain
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+Set this in your deployment environment:
+```bash
+export ALLOWED_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
 ```
 
 ### 4. Enable HTTPS

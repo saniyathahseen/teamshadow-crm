@@ -53,8 +53,7 @@ function Login({ onLogin }) {
           {error && <div className="login-error">{error}</div>}
           <button type="submit" className="btn btn-primary btn-full">Sign In</button>
           <div className="login-hint">
-            <p>Demo: admin / admin123</p>
-            <p>Staff: sarah / staff123</p>
+            <p>Set TEAMSHADOW_ADMIN_USERNAME and TEAMSHADOW_ADMIN_PASSWORD before starting the app.</p>
           </div>
         </form>
       </div>

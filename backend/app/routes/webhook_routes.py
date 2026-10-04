@@ -20,9 +20,9 @@ router = APIRouter(prefix="/api", tags=["Webhooks"])
 security = HTTPBearer()
 
 # ============================================
-# Configuration (from env vars, not hardcoded)
+# Configuration (from environment variables only)
 # ============================================
-WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "teamshadow-webhook-verify-2024")
+WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 WHATSAPP_API_TOKEN = os.getenv("WHATSAPP_API_TOKEN", "")
 WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_ID", "")
 META_API_URL = "https://graph.facebook.com/v19.0"

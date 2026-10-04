@@ -1,6 +1,8 @@
 """
 Team Shadow Weddings CRM - Main Application
 """
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,10 +27,16 @@ app = FastAPI(
     description="Unified Order Management System for Team Shadow Weddings"
 )
 
-# CORS
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    if origin.strip()
+]
+
+# CORS configuration should be driven by environment variables instead of permitting all origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

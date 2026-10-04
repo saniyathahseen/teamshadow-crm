@@ -41,14 +41,16 @@ npm install
 npm start
 ```
 
-## 👤 Default Login
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `admin` | `admin123` |
-| Sales | `sarah` | `staff123` |
-| Photographer | `mike` | `staff123` |
-| Editor | `emma` | `staff123` |
-| Videographer | `alex` | `staff123` |
+## 👤 Initial Admin Setup
+Set these environment variables before starting the app:
+
+```bash
+TEAMSHADOW_ADMIN_USERNAME=admin
+TEAMSHADOW_ADMIN_PASSWORD=change-this-password
+TEAMSHADOW_STAFF_PASSWORD=change-this-password
+```
+
+Optional staff accounts will be created automatically using the configured staff password when the app starts.
 
 ## 📱 What This System Does
 
