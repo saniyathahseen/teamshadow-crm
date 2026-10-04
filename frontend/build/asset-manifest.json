@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/teamshadow-crm/static/css/main.3232674d.css",
-    "main.js": "/teamshadow-crm/static/js/main.f75b73bf.js",
+    "main.js": "/teamshadow-crm/static/js/main.5a077039.js",
     "index.html": "/teamshadow-crm/index.html",
     "main.3232674d.css.map": "/teamshadow-crm/static/css/main.3232674d.css.map",
-    "main.f75b73bf.js.map": "/teamshadow-crm/static/js/main.f75b73bf.js.map"
+    "main.5a077039.js.map": "/teamshadow-crm/static/js/main.5a077039.js.map"
   },
   "entrypoints": [
     "static/css/main.3232674d.css",
-    "static/js/main.f75b73bf.js"
+    "static/js/main.5a077039.js"
   ]
 }
